@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 
 _AGE_RE = re.compile(r"^\s*(\d{4})\s*(?:\((?!년생)([^)]*)\))?\s*\(년생\)\s*$")
 
@@ -48,3 +48,12 @@ def adoption_status(notice_end: str | None, today: date | None = None) -> str:
     if end >= today:
         return f"공고 중 · {end.month}/{end.day}까지"
     return "입양 가능"
+
+
+KST = timezone(timedelta(hours=9))
+
+
+def format_updated(fetched_at: datetime) -> str:
+    """데이터를 받은 시각을 한국 시간으로: '11월 3일 14:23 기준'."""
+    t = fetched_at.astimezone(KST)
+    return f"{t.month}월 {t.day}일 {t:%H:%M} 기준"

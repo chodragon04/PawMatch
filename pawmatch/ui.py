@@ -8,7 +8,10 @@ import re
 
 import streamlit as st
 
-from pawmatch.display import adoption_status, format_age, format_sex
+from pawmatch.api import ApiError
+from pawmatch.config import get_api_key
+from pawmatch.data import STALE_SNAPSHOT, Dataset, load_dataset
+from pawmatch.display import adoption_status, format_age, format_sex, format_updated
 
 PHOTO_FAIL_TITLE = "사진을 불러오지 못했어요"
 PHOTO_FAIL_DETAIL = "보호소에 문의하면 아이의 모습을 확인할 수 있어요"
@@ -100,6 +103,24 @@ def photo_html(dog: dict, element_id: str) -> str:
         f'<img src="{first}" alt="{alt}" loading="lazy" referrerpolicy="no-referrer">{fail}</div>'
         f"{script}"
     )
+
+
+@st.cache_data(ttl=1800, show_spinner=False)
+def _cached_dataset(api_key: str | None) -> Dataset:
+    return load_dataset(api_key)
+
+
+def load_data_or_stop() -> Dataset:
+    """보호견·보호소 데이터를 불러옵니다. 실패하면 안내를 보여주고 페이지를 멈춥니다."""
+    try:
+        with st.spinner("보호 중인 아이들을 불러오는 중..."):
+            data = _cached_dataset(get_api_key())
+    except ApiError as exc:
+        st.error(f"유기견 정보를 불러오지 못했습니다.\n\n{exc}")
+        st.stop()
+    if data.source == STALE_SNAPSHOT:
+        st.warning(f"최신 정보를 불러오지 못해 {format_updated(data.fetched_at)} 정보를 보여드려요.")
+    return data
 
 
 def inject_card_css() -> None:
