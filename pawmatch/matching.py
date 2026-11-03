@@ -16,6 +16,7 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from dataclasses import dataclass, field
 from datetime import date
 
@@ -52,6 +53,7 @@ class Survey:
     pref_age: str = ANY  # traits.PUPPY / YOUNG / ADULT / SENIOR / ANY
     pref_sex: str = ANY  # "M" / "F" / ANY
     health_ok: bool = False  # 치료가 필요한 아이도 괜찮은지
+    breeds: tuple[str, ...] = ()  # 원하는 품종 (비어 있으면 모든 품종). 고르면 그 품종만 추천합니다.
 
 
 @dataclass
@@ -62,6 +64,20 @@ class MatchResult:
     reasons: list[str] = field(default_factory=list)  # 잘 맞는 이유
     cautions: list[str] = field(default_factory=list)  # 미리 알아두면 좋은 점
     distance_km: float | None = None
+
+
+def breed_name(dog: dict) -> str:
+    """품종 이름: kindNm, 없으면 kindFullNm에서 '[개] '를 뗀 값."""
+    name = (dog.get("kindNm") or "").strip()
+    if not name:
+        name = (dog.get("kindFullNm") or "").replace("[개]", "").strip()
+    return name or "기타"
+
+
+def breed_options(dogs: list[dict]) -> list[tuple[str, int]]:
+    """설문의 품종 선택지: (품종, 마릿수)를 많은 순서로."""
+    counts = Counter(breed_name(d) for d in dogs)
+    return sorted(counts.items(), key=lambda x: (-x[1], x[0]))
 
 
 # ---------------------------------------------------------------- 항목별 점수
@@ -217,11 +233,14 @@ def rank_dogs(
     """(유기견, 거리km) 목록을 점수가 높은 순으로 정렬합니다.
 
     최대 거리를 정했다면 그보다 먼 아이와 위치를 모르는 아이는 제외합니다.
-    점수가 같으면 가까운 아이가 먼저 옵니다.
+    품종을 골랐다면 그 품종만 남깁니다. 점수가 같으면 가까운 아이가 먼저 옵니다.
     """
+    breeds = set(survey.breeds)
     results = []
     for dog, distance in ranked:
         if survey.max_km and (distance is None or distance > survey.max_km):
+            continue
+        if breeds and breed_name(dog) not in breeds:
             continue
         results.append(score_dog(dog, survey, distance, today))
     results.sort(key=lambda m: (-m.score, m.distance_km is None, m.distance_km or 0.0))

@@ -33,6 +33,11 @@ def locate_sigungu(sido: str, sigungu: str) -> tuple[float, float] | None:
         return None
 
 
+def selected_area(key: str) -> tuple[str, str | None] | None:
+    """지역 선택에서 고른 (시/도, 시/군/구). 시/군/구가 '전체'면 (시/도, None), 내 위치를 쓰면 None."""
+    return st.session_state.get(f"{key}_area")
+
+
 def pick_region(key: str) -> tuple[float, float]:
     """시/도와 시/군/구를 고르게 하고 기준 위치를 돌려줍니다."""
     regions = load_regions()
@@ -43,6 +48,7 @@ def pick_region(key: str) -> tuple[float, float]:
     sigungu = col_sigungu.selectbox(
         "시/군/구", options, index=0, key=f"{key}_sigungu_{sido}", disabled=len(options) == 1
     )
+    st.session_state[f"{key}_area"] = (sido, sigungu if sigungu != WHOLE_SIDO else None)
 
     if sigungu != WHOLE_SIDO:
         pos = locate_sigungu(sido, sigungu)
@@ -64,6 +70,7 @@ def pick_origin(key: str = "origin") -> tuple[float, float] | None:
 
     if mode == PICK_REGION:
         return pick_region(key)
+    st.session_state[f"{key}_area"] = None
 
     st.caption("위치 정보는 가까운 보호소를 찾는 데에만 쓰이며 저장되지 않습니다.")
     loc = get_geolocation(component_key=f"{key}_geolocation")
