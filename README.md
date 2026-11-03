@@ -26,6 +26,7 @@
 - **웹 프레임워크**: [Streamlit](https://streamlit.io/)
 - **데이터**: 공공데이터포털 국가동물보호정보시스템 구조동물 조회 서비스
 - **이미지 검색**: 사전학습 이미지 모델(CLIP) (예정)
+- **배포**: [Streamlit Community Cloud](https://streamlit.io/cloud) (GitHub 푸시 시 자동 반영)
 
 ## 프로젝트 구조
 
@@ -42,6 +43,7 @@ PawMatch/
 │   ├── api.py           # 공공데이터 API 클라이언트
 │   ├── matching.py      # 설문 기반 매칭 점수 계산
 │   └── image_search.py  # 이미지 유사도 검색
+├── tests/               # 단위 테스트 (pytest)
 ├── data/                # 데이터 캐시 (Git에 올리지 않음)
 ├── docs/images/         # README용 스크린샷
 ├── requirements.txt
@@ -75,11 +77,32 @@ PawMatch/
    cp .env.example .env
    ```
 
+   (`.streamlit/secrets.toml`을 써도 됩니다. `.streamlit/secrets.toml.example` 참고)
+
 4. 실행
 
    ```bash
    streamlit run app.py
    ```
+
+5. 테스트 (선택)
+
+   ```bash
+   pip install -r requirements-dev.txt
+   pytest
+   ```
+
+## 배포 (Streamlit Community Cloud)
+
+1. [share.streamlit.io](https://share.streamlit.io/)에 GitHub 계정으로 로그인
+2. **Create app** → 이 저장소, 브랜치, Main file `app.py` 선택
+3. **Advanced settings**에서 Python 버전 선택, **Secrets** 칸에 아래 내용 입력
+
+   ```toml
+   DATA_GO_KR_API_KEY = "발급받은_일반_인증키(Decoding)"
+   ```
+
+4. **Deploy** 클릭. 이후 해당 브랜치에 푸시하면 자동으로 다시 배포됩니다.
 
 ## 데이터 출처
 
