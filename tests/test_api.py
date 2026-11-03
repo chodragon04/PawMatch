@@ -27,6 +27,11 @@ def ok_body(items, total):
     }
 
 
+@pytest.fixture(autouse=True)
+def no_retry_wait(monkeypatch):
+    monkeypatch.setattr(api, "RETRY_BACKOFF", 0)
+
+
 @pytest.fixture
 def fake_get(monkeypatch):
     calls = {}
@@ -36,7 +41,7 @@ def fake_get(monkeypatch):
             calls["url"], calls["params"] = url, params
             return response
 
-        monkeypatch.setattr(api.requests, "get", _get)
+        monkeypatch.setattr(api._SESSION, "get", _get)
         return calls
 
     return install
@@ -89,13 +94,48 @@ def test_http_error_raises(fake_get):
         api.fetch_abandoned_dogs("KEY")
 
 
-def test_network_error_raises(monkeypatch):
+def test_network_error_raises_after_retries(monkeypatch):
+    attempts = []
+
     def boom(*a, **k):
+        attempts.append(1)
         raise requests.ConnectionError("down")
 
-    monkeypatch.setattr(api.requests, "get", boom)
+    monkeypatch.setattr(api._SESSION, "get", boom)
     with pytest.raises(api.ApiError, match="연결하지 못했습니다"):
         api.fetch_abandoned_dogs("KEY")
+    assert len(attempts) == api.RETRIES + 1
+
+
+def test_transient_errors_are_retried(monkeypatch):
+    responses = [
+        requests.ConnectionError("reset"),
+        FakeResponse(None, status=503, text="busy"),
+        FakeResponse(ok_body({"item": {"desertionNo": "1"}}, 1)),
+    ]
+
+    def _get(*a, **k):
+        r = responses.pop(0)
+        if isinstance(r, Exception):
+            raise r
+        return r
+
+    monkeypatch.setattr(api._SESSION, "get", _get)
+    dogs, _ = api.fetch_abandoned_dogs("KEY")
+    assert dogs == [{"desertionNo": "1"}] and responses == []
+
+
+def test_client_errors_are_not_retried(monkeypatch):
+    attempts = []
+
+    def _get(*a, **k):
+        attempts.append(1)
+        return FakeResponse(None, status=403, text="Forbidden")
+
+    monkeypatch.setattr(api._SESSION, "get", _get)
+    with pytest.raises(api.ApiError, match="HTTP 403"):
+        api.fetch_abandoned_dogs("KEY")
+    assert len(attempts) == 1
 
 
 def test_duplicate_records_are_removed(fake_get):
@@ -104,24 +144,72 @@ def test_duplicate_records_are_removed(fake_get):
     assert [d["desertionNo"] for d in dogs] == ["1", "2"]
 
 
-def test_fetch_all_dogs_pages_through_results_for_each_state(monkeypatch):
-    monkeypatch.setattr(api, "MAX_ROWS", 2)
-    pages = {
-        ("notice", 1): ok_body({"item": [{"desertionNo": "1"}, {"desertionNo": "2"}]}, 3),
-        ("notice", 2): ok_body({"item": {"desertionNo": "3"}}, 3),
-        ("protect", 1): ok_body({"item": [{"desertionNo": "3"}, {"desertionNo": "4"}]}, 2),
-    }
+def install_pages(monkeypatch, pages, key=lambda p: (p.get("state"), p["pageNo"])):
+    """(상태, 페이지) → 응답 표를 흉내 냅니다. 표에 없는 페이지는 빈 결과."""
     seen = []
 
     def _get(url, params=None, timeout=None):
-        key = (params["state"], params["pageNo"])
-        seen.append(key)
-        return FakeResponse(pages[key])
+        k = key(params)
+        seen.append(k)
+        return FakeResponse(pages.get(k, ok_body("", 0)))
 
-    monkeypatch.setattr(api.requests, "get", _get)
+    monkeypatch.setattr(api._SESSION, "get", _get)
+    return seen
+
+
+def test_fetch_all_dogs_pages_through_results_for_each_state(monkeypatch):
+    monkeypatch.setattr(api, "MAX_ROWS", 2)
+    monkeypatch.setattr(api, "DOG_PREFETCH_PAGES", 1)
+    seen = install_pages(
+        monkeypatch,
+        {
+            ("notice", 1): ok_body({"item": [{"desertionNo": "1"}, {"desertionNo": "2"}]}, 3),
+            ("notice", 2): ok_body({"item": {"desertionNo": "3"}}, 3),
+            ("protect", 1): ok_body({"item": [{"desertionNo": "3"}, {"desertionNo": "4"}]}, 2),
+        },
+    )
     dogs = api.fetch_all_dogs("KEY")
-    assert seen == [("notice", 1), ("notice", 2), ("protect", 1)]
+    # 동시에 요청하므로 순서는 정해져 있지 않지만, 결과는 상태·페이지 순서를 유지합니다.
+    assert sorted(seen) == [("notice", 1), ("notice", 2), ("protect", 1)]
     assert [d["desertionNo"] for d in dogs] == ["1", "2", "3", "4"]  # 3번 중복 제거
+
+
+def test_prefetched_pages_avoid_a_second_round(monkeypatch):
+    monkeypatch.setattr(api, "MAX_ROWS", 2)
+    monkeypatch.setattr(api, "DOG_PREFETCH_PAGES", 2)
+    seen = install_pages(
+        monkeypatch,
+        {
+            ("notice", 1): ok_body({"item": [{"desertionNo": "1"}, {"desertionNo": "2"}]}, 3),
+            ("notice", 2): ok_body({"item": {"desertionNo": "3"}}, 3),
+        },
+    )
+    dogs = api.fetch_all_dogs("KEY", states=("notice",))
+    assert sorted(seen) == [("notice", 1), ("notice", 2)]
+    assert [d["desertionNo"] for d in dogs] == ["1", "2", "3"]
+
+
+def test_remaining_pages_are_fetched_after_prefetch(monkeypatch):
+    monkeypatch.setattr(api, "MAX_ROWS", 1)
+    monkeypatch.setattr(api, "DOG_PREFETCH_PAGES", 2)
+    seen = install_pages(
+        monkeypatch,
+        {("protect", p): ok_body({"item": {"desertionNo": str(p)}}, 4) for p in range(1, 5)},
+    )
+    dogs = api.fetch_all_dogs("KEY", states=("protect",))
+    assert sorted(seen) == [("protect", p) for p in range(1, 5)]
+    assert [d["desertionNo"] for d in dogs] == ["1", "2", "3", "4"]
+
+
+def test_stops_when_page_is_not_full_even_if_total_is_larger(monkeypatch):
+    # 실제 보호소 API는 totalCount=861인데 338건만 내려줍니다.
+    monkeypatch.setattr(api, "MAX_ROWS", 3)
+    seen = install_pages(
+        monkeypatch,
+        {(None, 1): ok_body({"item": [{"careNm": "A"}, {"careNm": "B"}]}, 10)},
+    )
+    assert [s["careNm"] for s in api.fetch_shelters("KEY")] == ["A", "B"]
+    assert seen == [(None, 1)]
 
 
 def test_fetch_shelters_uses_shelter_endpoint(fake_get):
