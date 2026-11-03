@@ -96,3 +96,36 @@ def test_network_error_raises(monkeypatch):
     monkeypatch.setattr(api.requests, "get", boom)
     with pytest.raises(api.ApiError, match="연결하지 못했습니다"):
         api.fetch_abandoned_dogs("KEY")
+
+
+def test_duplicate_records_are_removed(fake_get):
+    fake_get(FakeResponse(ok_body({"item": [{"desertionNo": "1"}, {"desertionNo": "1"}, {"desertionNo": "2"}]}, 3)))
+    dogs, _ = api.fetch_abandoned_dogs("KEY")
+    assert [d["desertionNo"] for d in dogs] == ["1", "2"]
+
+
+def test_fetch_all_dogs_pages_through_results_for_each_state(monkeypatch):
+    monkeypatch.setattr(api, "MAX_ROWS", 2)
+    pages = {
+        ("notice", 1): ok_body({"item": [{"desertionNo": "1"}, {"desertionNo": "2"}]}, 3),
+        ("notice", 2): ok_body({"item": {"desertionNo": "3"}}, 3),
+        ("protect", 1): ok_body({"item": [{"desertionNo": "3"}, {"desertionNo": "4"}]}, 2),
+    }
+    seen = []
+
+    def _get(url, params=None, timeout=None):
+        key = (params["state"], params["pageNo"])
+        seen.append(key)
+        return FakeResponse(pages[key])
+
+    monkeypatch.setattr(api.requests, "get", _get)
+    dogs = api.fetch_all_dogs("KEY")
+    assert seen == [("notice", 1), ("notice", 2), ("protect", 1)]
+    assert [d["desertionNo"] for d in dogs] == ["1", "2", "3", "4"]  # 3번 중복 제거
+
+
+def test_fetch_shelters_uses_shelter_endpoint(fake_get):
+    calls = fake_get(FakeResponse(ok_body({"item": [{"careNm": "A", "lat": "37.5", "lng": "127.0"}]}, 1)))
+    shelters = api.fetch_shelters("KEY")
+    assert calls["url"] == f"{api.SHELTER_BASE_URL}/shelterInfo_v2"
+    assert shelters[0]["careNm"] == "A"
