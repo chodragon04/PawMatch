@@ -4,6 +4,7 @@ import streamlit as st
 
 from pawmatch import matching as M
 from pawmatch import traits as T
+from pawmatch.detail import render_dog_detail
 from pawmatch.geo import ShelterLocator, sort_by_distance
 from pawmatch.location import pick_origin
 from pawmatch.ui import inject_card_css, load_data_or_stop, render_card
@@ -18,7 +19,7 @@ SIZE_OPTIONS = {M.ANY: "상관없음", **T.SIZE_LABELS}
 AGE_OPTIONS = {M.ANY: "상관없음", **T.AGE_LABELS}
 
 
-def survey_form(max_km: float | None) -> M.Survey | None:
+def survey_form(max_km: float | None, breeds: list[tuple[str, int]]) -> M.Survey | None:
     """설문을 보여주고, 제출하면 응답을 돌려줍니다."""
     with st.form("match_survey_form"):
         st.markdown("##### 2. 생활 환경")
@@ -44,6 +45,12 @@ def survey_form(max_km: float | None) -> M.Survey | None:
         pref_size = c1.selectbox("크기", list(SIZE_OPTIONS), format_func=SIZE_OPTIONS.get)
         pref_age = c2.selectbox("나이", list(AGE_OPTIONS), format_func=AGE_OPTIONS.get)
         pref_sex = c3.selectbox("성별", list(M.SEX_PREF_LABELS), format_func=M.SEX_PREF_LABELS.get)
+        counts = dict(breeds)
+        chosen_breeds = st.multiselect(
+            "품종", [name for name, _ in breeds], format_func=lambda name: f"{name} ({counts[name]:,})",
+            placeholder="모든 품종 (여러 개 고를 수 있어요)",
+            help="품종을 고르면 그 품종의 아이만 추천해요. 괄호 안은 지금 보호 중인 마릿수예요.",
+        )  # fmt: skip
         health_ok = st.checkbox("치료나 보살핌이 더 필요한 아이도 괜찮아요")
 
         if not st.form_submit_button("🐾 나와 잘 맞는 아이 찾기", type="primary", width="stretch"):
@@ -51,16 +58,35 @@ def survey_form(max_km: float | None) -> M.Survey | None:
     return M.Survey(
         home=home, walk=walk, first_dog=first_dog, has_kids=has_kids, has_pets=has_pets, away=away,
         max_km=max_km, pref_size=pref_size, pref_age=pref_age, pref_sex=pref_sex, health_ok=health_ok,
+        breeds=tuple(chosen_breeds),
     )  # fmt: skip
 
 
-def render_result(result: M.MatchResult, index: int) -> None:
-    render_card(result.dog, distance_km=result.distance_km, key_prefix=f"match{index}")
-    st.markdown(f":violet-badge[적합도 {result.score}점]")
-    lines = [f"👍 {r}" for r in result.reasons[:MAX_REASONS]]
-    lines += [f"⚠️ {c}" for c in result.cautions[:MAX_CAUTIONS]]
-    if lines:
-        st.caption("\n\n".join(lines))
+def show_detail(result: M.MatchResult, shelter: dict | None) -> None:
+    """유기견 상세 정보를 모달 창으로 엽니다."""
+    title = result.dog.get("kindFullNm") or result.dog.get("kindNm") or "아이 정보"
+
+    @st.dialog(title, width="large")
+    def _dialog() -> None:
+        render_dog_detail(
+            result.dog, shelter, distance_km=result.distance_km, score=result.score,
+            reasons=result.reasons, cautions=result.cautions,
+        )  # fmt: skip
+
+    _dialog()
+
+
+def render_result(result: M.MatchResult, index: int, locator: ShelterLocator) -> None:
+    with st.container(border=True):
+        render_card(result.dog, distance_km=result.distance_km, key_prefix=f"match{index}")
+        st.markdown(f":violet-badge[적합도 {result.score}점]")
+        lines = [f"👍 {r}" for r in result.reasons[:MAX_REASONS]]
+        lines += [f"⚠️ {c}" for c in result.cautions[:MAX_CAUTIONS]]
+        if lines:
+            st.caption("\n\n".join(lines))
+        key = f"detail_{index}_{result.dog.get('desertionNo')}"
+        if st.button("🔍 자세히 보기", key=key, width="stretch"):
+            show_detail(result, locator.shelter_info(result.dog))
 
 
 def show_more() -> None:
@@ -82,7 +108,7 @@ origin = pick_origin("match")
 distance_label = st.selectbox("보호소까지 거리", list(DISTANCE_OPTIONS), index=0, disabled=origin is None)
 max_km = DISTANCE_OPTIONS[distance_label] if origin is not None else None
 
-submitted = survey_form(max_km)
+submitted = survey_form(max_km, M.breed_options(data.dogs))
 if submitted is not None:
     st.session_state.match_survey = submitted
     st.session_state.match_limit = PAGE_SIZE
@@ -93,19 +119,23 @@ if survey is None:
 
 # 위치나 거리 조건이 바뀌면 다시 제출하지 않아도 바로 반영합니다.
 survey = replace(survey, max_km=max_km)
+locator = ShelterLocator(data.shelters)
 if origin is not None:
-    ranked = sort_by_distance(data.dogs, ShelterLocator(data.shelters), origin)
+    ranked = sort_by_distance(data.dogs, locator, origin)
 else:
     ranked = [(dog, None) for dog in data.dogs]
 results = M.rank_dogs(ranked, survey, limit=MAX_RESULTS)
 
 st.divider()
 if not results:
-    st.warning("조건에 맞는 아이가 없어요. 보호소까지 거리를 늘려 보세요.")
+    hint = "보호소까지 거리를 늘리거나 품종을 더 골라 보세요." if survey.breeds else "보호소까지 거리를 늘려 보세요."
+    st.warning(f"조건에 맞는 아이가 없어요. {hint}")
     st.stop()
 
 limit = min(st.session_state.get("match_limit", PAGE_SIZE), len(results))
 st.subheader(f"나와 잘 맞을 것 같은 아이들 (상위 {limit}마리)")
+if survey.breeds:
+    st.caption("품종: " + ", ".join(survey.breeds))
 if origin is None:
     st.caption("위치를 정하면 가까운 보호소의 아이에게 거리 점수가 더해져요.")
 
@@ -114,7 +144,7 @@ for start in range(0, len(shown), COLUMNS):
     cols = st.columns(COLUMNS)
     for col, (i, result) in zip(cols, enumerate(shown[start : start + COLUMNS], start)):
         with col:
-            render_result(result, i)
+            render_result(result, i, locator)
 
 if limit < len(results):
     st.button("추천 더 보기", on_click=show_more, width="stretch")
@@ -136,5 +166,6 @@ with st.expander("점수는 이렇게 계산해요"):
     )
     st.caption(
         "정보가 없는 항목(예: 특징 메모에 성격 이야기가 없음)은 감점하지 않고 중간 점수로 계산해요. "
+        "품종과 보호소까지 거리는 점수가 아니라 조건이라서, 고르면 그에 맞는 아이만 추천해요. "
         "자세한 기준은 저장소의 pawmatch/matching.py와 docs/data-analysis.md에 있어요."
     )

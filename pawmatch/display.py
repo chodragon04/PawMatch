@@ -57,3 +57,69 @@ def format_updated(fetched_at: datetime) -> str:
     """데이터를 받은 시각을 한국 시간으로: '11월 3일 14:23 기준'."""
     t = fetched_at.astimezone(KST)
     return f"{t.month}월 {t.day}일 {t:%H:%M} 기준"
+
+
+NEUTER_LABELS = {"Y": "했어요", "N": "안 했어요", "U": "확인 안 됨"}
+
+
+def format_weight(raw: str | None) -> str:
+    """'5.6(Kg)' -> '5.6kg'. 읽을 수 없으면 원문 그대로."""
+    from pawmatch.traits import parse_weight
+
+    weight = parse_weight(raw)
+    if weight is None:
+        return (raw or "").strip() or "체중 미상"
+    return f"{weight:g}kg"
+
+
+def format_neuter(code: str | None) -> str:
+    return NEUTER_LABELS.get((code or "").upper(), "확인 안 됨")
+
+
+def format_ymd(raw: str | None) -> str:
+    """'20261103' -> '2026. 11. 3.'"""
+    d = parse_ymd(raw)
+    return f"{d.year}. {d.month}. {d.day}." if d else ""
+
+
+def _time_range(start: str | None, end: str | None) -> str:
+    start, end = (start or "").strip(), (end or "").strip()
+    if not start or not end or start == ":" or end == ":":
+        return ""
+    return f"{start} ~ {end}"
+
+
+def format_shelter_hours(shelter: dict | None) -> list[str]:
+    """보호소 운영 시간·휴무일 문구 목록. 정보가 없으면 빈 목록."""
+    if not shelter:
+        return []
+    lines = []
+    weekday = _time_range(shelter.get("weekOprStime"), shelter.get("weekOprEtime"))
+    weekend = _time_range(shelter.get("weekendOprStime"), shelter.get("weekendOprEtime"))
+    if weekday:
+        lines.append(f"평일 {weekday}")
+    if weekend:
+        lines.append(f"주말 {weekend}")
+    close = (shelter.get("closeDay") or "").strip()
+    if close and close != "0":
+        lines.append(f"휴무 {close.replace('+', ', ')}")
+    return lines
+
+
+def dog_facts(dog: dict) -> list[tuple[str, str]]:
+    """상세 정보 창에 보여줄 (항목, 값) 목록. 값이 없는 항목은 뺍니다."""
+    notice = " ~ ".join(x for x in (format_ymd(dog.get("noticeSdt")), format_ymd(dog.get("noticeEdt"))) if x)
+    found = " · ".join(x for x in (format_ymd(dog.get("happenDt")), (dog.get("happenPlace") or "").strip()) if x)
+    facts = [
+        ("나이", format_age(dog.get("age"))),
+        ("성별", format_sex(dog.get("sexCd"))),
+        ("체중", format_weight(dog.get("weight"))),
+        ("털색", (dog.get("colorCd") or "").strip()),
+        ("중성화", format_neuter(dog.get("neuterYn"))),
+        ("발견", found),
+        ("공고 기간", notice),
+        ("접종", (dog.get("vaccinationChk") or "").strip()),
+        ("검사 항목", (dog.get("healthChk") or "").strip()),
+        ("공고 번호", (dog.get("noticeNo") or "").strip()),
+    ]
+    return [(label, value) for label, value in facts if value]

@@ -2,7 +2,7 @@ import streamlit as st
 
 from pawmatch.display import format_updated
 from pawmatch.geo import ShelterLocator, group_by_shelter, sort_by_distance
-from pawmatch.location import pick_origin
+from pawmatch.location import pick_origin, selected_area
 from pawmatch.ui import inject_card_css, load_data_or_stop, render_grid
 
 LATEST_COUNT = 8  # 위치가 없을 때 보여줄 최근 등록 아이 수
@@ -15,13 +15,16 @@ def show_more_shelters() -> None:
     st.session_state.shelter_count = st.session_state.get("shelter_count", SHELTERS_STEP) + SHELTERS_STEP
 
 
-def render_shelter_groups(groups: list[dict]) -> None:
+def render_shelter_groups(groups: list[dict], area: tuple[str, str] | None = None) -> None:
     count = st.session_state.get("shelter_count", SHELTERS_STEP)
     for i, group in enumerate(groups[:count]):
         dogs = group["dogs"]
         with st.container(border=True):
             st.markdown(f"#### 🏠 {group['name']}")
-            info = [f"📍 {group['distance_km']:.1f}km", f"아이들 {len(dogs)}마리"]
+            distance = group["distance_km"]
+            info = [f"📍 {distance:.1f}km" if distance is not None else "📍 거리 정보 없음", f"아이들 {len(dogs)}마리"]
+            if group["in_area"] and area:
+                info.insert(0, f"📌 {area[1] or area[0]} 안")
             if group["tel"]:
                 info.append(f"☎ {group['tel']}")
             st.caption(" · ".join(info) + (f"\n\n{group['address']}" if group["address"] else ""))
@@ -71,7 +74,15 @@ st.subheader("가까운 보호소의 아이들")
 origin = pick_origin("home")
 
 if origin is not None:
-    render_shelter_groups(group_by_shelter(sort_by_distance(dogs, locator, origin)))
+    area = selected_area("home")
+    groups = group_by_shelter(sort_by_distance(dogs, locator, origin), area)
+    if area:
+        name = area[1] or area[0]
+        if any(g["in_area"] for g in groups):
+            st.caption(f"📌 {name} 안에 있는 보호소를 먼저 보여드리고, 그다음 가까운 보호소 순으로 보여드려요.")
+        else:
+            st.caption(f"{name} 안에는 지금 보호 중인 아이가 있는 보호소가 없어 가까운 보호소 순으로 보여드려요.")
+    render_shelter_groups(groups, area)
 else:
     st.caption("최근 등록된 아이들")
     render_grid(dogs[:LATEST_COUNT], key_prefix="latest")

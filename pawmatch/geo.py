@@ -54,7 +54,13 @@ class ShelterLocator:
     def __init__(self, shelters: list[dict]):
         self.by_reg_no: dict[str, tuple[float, float]] = {}
         self.by_name: dict[str, tuple[float, float]] = {}
+        self.records_by_reg_no: dict[str, dict] = {}
+        self.records_by_name: dict[str, dict] = {}
         for s in shelters:
+            if s.get("careRegNo"):
+                self.records_by_reg_no.setdefault(str(s["careRegNo"]), s)
+            if s.get("careNm"):
+                self.records_by_name.setdefault(_normalize_name(s["careNm"]), s)
             lat, lng = _to_float(s.get("lat")), _to_float(s.get("lng"))
             if lat is None or lng is None:
                 continue
@@ -69,6 +75,13 @@ class ShelterLocator:
             return self.by_reg_no[str(reg_no)]
         return self.by_name.get(_normalize_name(dog.get("careNm")))
 
+    def shelter_info(self, dog: dict) -> dict | None:
+        """유기견이 있는 보호소의 정보(운영 시간 등). 보호소 번호 → 이름 순으로 찾습니다."""
+        reg_no = dog.get("careRegNo")
+        if reg_no and str(reg_no) in self.records_by_reg_no:
+            return self.records_by_reg_no[str(reg_no)]
+        return self.records_by_name.get(_normalize_name(dog.get("careNm")))
+
 
 def sort_by_distance(
     dogs: list[dict], locator: ShelterLocator, origin: tuple[float, float]
@@ -81,15 +94,64 @@ def sort_by_distance(
     return sorted(with_distance, key=lambda x: (x[1] is None, x[1] or 0.0))
 
 
-def group_by_shelter(ranked: list[tuple[dict, float | None]]) -> list[dict]:
+# 보호소 주소에 남아 있는 옛 이름·줄임말 → 지금 시/도 이름 (REGION_CENTERS의 키)
+SIDO_ALIASES = {
+    "서울": "서울특별시", "부산": "부산광역시", "대구": "대구광역시", "인천": "인천광역시", "대전": "대전광역시",
+    "울산": "울산광역시", "세종": "세종특별자치시", "세종시": "세종특별자치시", "경기": "경기도",
+    "강원": "강원특별자치도", "강원도": "강원특별자치도", "충북": "충청북도", "충남": "충청남도",
+    "전북": "전북특별자치도", "전라북도": "전북특별자치도", "경북": "경상북도", "경남": "경상남도",
+    "제주": "제주특별자치도", "제주도": "제주특별자치도",
+    "광주": "전남광주통합특별시", "광주광역시": "전남광주통합특별시", "전남": "전남광주통합특별시",
+    "전라남도": "전남광주통합특별시",
+}  # fmt: skip
+
+
+# 2026년 인천 행정체제 개편 전 주소: 동 이름으로 새 구를 정합니다.
+# (중구 영종도 지역 → 영종구, 나머지 중구·동구 → 제물포구 / 서구 검단 지역 → 검단구, 나머지 서구 → 서해구)
+_INCHEON_LEGACY = {
+    "중구": (("운서", "운남", "운북", "중산", "영종", "용유", "을왕", "남북동", "덕교", "무의"), "영종구", "제물포구"),
+    "동구": ((), "", "제물포구"),
+    "서구": (("검단", "마전", "당하", "원당", "불로", "대곡", "오류", "왕길", "금곡", "아라"), "검단구", "서해구"),
+}  # fmt: skip
+
+
+def _current_sigungu(sido: str, sigungu: str, address: str) -> str:
+    if sido == "인천광역시" and sigungu in _INCHEON_LEGACY:
+        keywords, matched, default = _INCHEON_LEGACY[sigungu]
+        return matched if any(k in address for k in keywords) else default
+    return sigungu
+
+
+def address_in_area(address: str | None, sido: str, sigungu: str | None = None) -> bool:
+    """주소가 고른 시/도(와 시/군/구) 안인지. 예: '인천광역시 연수구 ...' → ('인천광역시', '연수구')
+
+    시/군/구는 주소의 두 번째 낱말과 비교합니다. ('경기도 수원시 영통구 ...'는 수원시)
+    """
+    tokens = (address or "").split()
+    if not tokens or SIDO_ALIASES.get(tokens[0], tokens[0]) != sido:
+        return False
+    if not sigungu:
+        return True
+    if sido == "세종특별자치시":
+        return True
+    return len(tokens) > 1 and _current_sigungu(sido, tokens[1], address or "") == sigungu
+
+
+def group_by_shelter(
+    ranked: list[tuple[dict, float | None]], area: tuple[str, str | None] | None = None
+) -> list[dict]:
     """거리순 목록을 보호소별로 묶습니다. 가까운 보호소가 먼저 오고, 좌표를 모르는 아이는 제외합니다.
 
+    area(시/도, 시/군/구 또는 None)를 주면 주소가 그 지역 안인 보호소를 먼저(가까운 순),
+    그다음 나머지 보호소를 가까운 순으로 둡니다. 지역 안 보호소는 좌표를 몰라도 포함합니다.
+
     Returns:
-        [{"name", "distance_km", "address", "tel", "dogs": [...]}, ...]
+        [{"name", "distance_km", "address", "tel", "in_area", "dogs": [...]}, ...]
     """
     groups: dict[str, dict] = {}
     for dog, distance in ranked:
-        if distance is None:
+        inside = area is not None and address_in_area(dog.get("careAddr"), *area)
+        if distance is None and not inside:
             continue
         key = _normalize_name(dog.get("careNm")) or str(dog.get("careRegNo"))
         group = groups.get(key)
@@ -99,7 +161,12 @@ def group_by_shelter(ranked: list[tuple[dict, float | None]]) -> list[dict]:
                 "distance_km": distance,
                 "address": dog.get("careAddr") or "",
                 "tel": dog.get("careTel") or "",
+                "in_area": False,
                 "dogs": [],
             }
+        group["in_area"] = group["in_area"] or inside
         group["dogs"].append(dog)
-    return sorted(groups.values(), key=lambda g: g["distance_km"])
+
+    return sorted(
+        groups.values(), key=lambda g: (not g["in_area"], g["distance_km"] is None, g["distance_km"] or 0.0)
+    )

@@ -84,3 +84,26 @@ def test_rank_dogs_orders_by_score_and_applies_max_distance():
     assert {r.dog["desertionNo"] for r in within_10} == {"1", "2"}  # 위치 모름, 80km 제외
 
     assert len(M.rank_dogs(ranked, APARTMENT_BEGINNER, limit=2, today=TODAY)) == 2
+
+
+def test_breed_name_and_options():
+    assert M.breed_name({"kindNm": "푸들"}) == "푸들"
+    assert M.breed_name({"kindFullNm": "[개] 말티즈"}) == "말티즈"
+    assert M.breed_name({}) == "기타"
+    dogs = [{"kindNm": "믹스견"}, {"kindNm": "푸들"}, {"kindNm": "믹스견"}, {"kindNm": "말티즈"}]
+    assert M.breed_options(dogs) == [("믹스견", 2), ("말티즈", 1), ("푸들", 1)]  # 많은 순, 같으면 가나다순
+
+
+def test_rank_dogs_filters_by_breed():
+    poodle = {**CALM_SMALL_ADULT, "desertionNo": "p", "kindNm": "푸들"}
+    maltese = {**CALM_SMALL_ADULT, "desertionNo": "m", "kindNm": "말티즈"}
+    ranked = [(BIG_ACTIVE_FIERCE, 5.0), (poodle, 8.0), (maltese, 9.0), (NEWBORN_MIX, None)]
+
+    only_poodle = M.rank_dogs(ranked, M.Survey(breeds=("푸들",)), today=TODAY)
+    assert [r.dog["desertionNo"] for r in only_poodle] == ["p"]
+
+    two = M.rank_dogs(ranked, M.Survey(breeds=("푸들", "말티즈")), today=TODAY)
+    assert {r.dog["desertionNo"] for r in two} == {"p", "m"}
+
+    assert len(M.rank_dogs(ranked, M.Survey(), today=TODAY)) == 4  # 고르지 않으면 모든 품종
+    assert M.rank_dogs(ranked, M.Survey(breeds=("셰퍼드",)), today=TODAY) == []
