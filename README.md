@@ -49,7 +49,9 @@ PawMatch/
 │   └── image_search.py  # 이미지 유사도 검색
 ├── tests/               # 단위 테스트 (pytest)
 ├── data/                # 데이터 캐시 (Git에 올리지 않음)
-├── docs/images/         # README용 스크린샷
+├── docs/
+│   ├── data-analysis.md # 공공데이터 필드 분석 (채워진 비율, 매칭에 쓸 정보)
+│   └── images/          # README용 스크린샷
 ├── requirements.txt
 ├── .env.example
 └── LICENSE

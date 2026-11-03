@@ -3,6 +3,17 @@
 from pawmatch.ui import PHOTO_FAIL_TITLE, photo_html, photo_urls
 
 
+def test_animal_go_kr_photos_use_https():
+    dog = {
+        "popfile1": "http://openapi.animal.go.kr/openapi/service/rest/fileDownloadSrvc/files/shelter/a.jpg",
+        "popfile2": "http://other.example.com/b.jpg",  # 다른 서버는 그대로 둡니다
+    }
+    assert photo_urls(dog) == [
+        "https://openapi.animal.go.kr/openapi/service/rest/fileDownloadSrvc/files/shelter/a.jpg",
+        "http://other.example.com/b.jpg",
+    ]
+
+
 def test_photo_urls_ordered_unique_and_http_only():
     dog = {
         "popfile2": "https://img/2.jpg",
