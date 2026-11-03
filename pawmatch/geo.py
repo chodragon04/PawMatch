@@ -79,3 +79,27 @@ def sort_by_distance(
         pos = locator.locate(dog)
         with_distance.append((dog, haversine_km(origin, pos) if pos else None))
     return sorted(with_distance, key=lambda x: (x[1] is None, x[1] or 0.0))
+
+
+def group_by_shelter(ranked: list[tuple[dict, float | None]]) -> list[dict]:
+    """거리순 목록을 보호소별로 묶습니다. 가까운 보호소가 먼저 오고, 좌표를 모르는 아이는 제외합니다.
+
+    Returns:
+        [{"name", "distance_km", "address", "tel", "dogs": [...]}, ...]
+    """
+    groups: dict[str, dict] = {}
+    for dog, distance in ranked:
+        if distance is None:
+            continue
+        key = _normalize_name(dog.get("careNm")) or str(dog.get("careRegNo"))
+        group = groups.get(key)
+        if group is None:
+            group = groups[key] = {
+                "name": dog.get("careNm") or "보호소",
+                "distance_km": distance,
+                "address": dog.get("careAddr") or "",
+                "tel": dog.get("careTel") or "",
+                "dogs": [],
+            }
+        group["dogs"].append(dog)
+    return sorted(groups.values(), key=lambda g: g["distance_km"])

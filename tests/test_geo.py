@@ -42,3 +42,18 @@ def test_sort_by_distance_puts_nearest_first_and_unknown_last():
 
     from_busan = sort_by_distance(dogs, ShelterLocator(SHELTERS), BUSAN)
     assert from_busan[0][0]["desertionNo"] == "busan"
+
+
+def test_group_by_shelter_orders_by_distance_and_skips_unknown():
+    from pawmatch.geo import group_by_shelter
+
+    dogs = [
+        {"desertionNo": "b1", "careRegNo": "222", "careNm": "부산 (사)보호소", "careTel": "051"},
+        {"desertionNo": "s1", "careRegNo": "111", "careNm": "서울 보호소"},
+        {"desertionNo": "b2", "careNm": "부산(사)보호소"},  # 번호 없이 이름만 있어도 같은 보호소
+        {"desertionNo": "x", "careNm": "어딘가"},
+    ]
+    groups = group_by_shelter(sort_by_distance(dogs, ShelterLocator(SHELTERS), BUSAN))
+    assert [g["name"] for g in groups] == ["부산 (사)보호소", "서울 보호소"]
+    assert [d["desertionNo"] for d in groups[0]["dogs"]] == ["b1", "b2"]
+    assert groups[0]["tel"] == "051" and groups[0]["distance_km"] < 5

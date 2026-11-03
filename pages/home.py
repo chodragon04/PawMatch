@@ -3,10 +3,13 @@ from streamlit_js_eval import get_geolocation
 
 from pawmatch.api import ApiError, fetch_all_dogs, fetch_shelters
 from pawmatch.config import API_KEY_ENV, get_api_key
-from pawmatch.display import adoption_status, format_age, format_sex
-from pawmatch.geo import REGION_CENTERS, ShelterLocator, sort_by_distance
+from pawmatch.geo import REGION_CENTERS, ShelterLocator, group_by_shelter, sort_by_distance
+from pawmatch.ui import inject_card_css, render_grid
 
-PREVIEW_COUNT = 8
+LATEST_COUNT = 8  # 위치가 없을 때 보여줄 최근 등록 아이 수
+SHELTERS_STEP = 3  # 한 번에 보여줄 보호소 수
+DOGS_PER_SHELTER = 4  # 보호소마다 먼저 보여줄 아이 수
+MORE_DOGS_LIMIT = 20  # '더 보기'에서 추가로 보여줄 최대 아이 수
 MY_LOCATION, PICK_REGION = "📍 내 위치로 찾기", "🗺️ 지역 선택"
 
 
@@ -18,19 +21,6 @@ def load_dogs(api_key: str) -> list[dict]:
 @st.cache_data(ttl=24 * 3600, show_spinner=False)
 def load_shelters(api_key: str) -> list[dict]:
     return fetch_shelters(api_key)
-
-
-def render_card(dog: dict, distance_km: float | None) -> None:
-    if dog.get("popfile1"):
-        st.image(dog["popfile1"], width="stretch")
-    st.markdown(f"**{dog.get('kindFullNm') or dog.get('kindNm') or '품종 미상'}**")
-    shelter = dog.get("careNm", "")
-    if distance_km is not None:
-        shelter = f"{shelter} · {distance_km:.1f}km"
-    st.caption(f"{format_age(dog.get('age'))} · {format_sex(dog.get('sexCd'))}\n\n{shelter}")
-    status = adoption_status(dog.get("noticeEdt"))
-    color = "green" if status == "입양 가능" else "orange"
-    st.markdown(f":{color}-badge[{status}]")
 
 
 def get_origin() -> tuple[float, float] | None:
@@ -57,6 +47,35 @@ def get_origin() -> tuple[float, float] | None:
     return coords["latitude"], coords["longitude"]
 
 
+def show_more_shelters() -> None:
+    st.session_state.shelter_count = st.session_state.get("shelter_count", SHELTERS_STEP) + SHELTERS_STEP
+
+
+def render_shelter_groups(groups: list[dict]) -> None:
+    count = st.session_state.get("shelter_count", SHELTERS_STEP)
+    for i, group in enumerate(groups[:count]):
+        dogs = group["dogs"]
+        with st.container(border=True):
+            st.markdown(f"#### 🏠 {group['name']}")
+            info = [f"📍 {group['distance_km']:.1f}km", f"아이들 {len(dogs)}마리"]
+            if group["tel"]:
+                info.append(f"☎ {group['tel']}")
+            st.caption(" · ".join(info) + (f"\n\n{group['address']}" if group["address"] else ""))
+            render_grid(dogs[:DOGS_PER_SHELTER], show_shelter=False, key_prefix=f"s{i}")
+
+            rest = dogs[DOGS_PER_SHELTER:]
+            if rest:
+                with st.expander(f"이 보호소 아이들 {len(rest)}마리 더 보기"):
+                    render_grid(rest[:MORE_DOGS_LIMIT], show_shelter=False, key_prefix=f"s{i}more")
+                    if len(rest) > MORE_DOGS_LIMIT:
+                        st.caption(
+                            f"나머지 {len(rest) - MORE_DOGS_LIMIT}마리는 '보호견 둘러보기'에서 확인할 수 있어요."
+                        )
+
+    if count < len(groups):
+        st.button("가까운 보호소 더 보기", on_click=show_more_shelters, width="stretch")
+
+
 st.title("🐾 PawMatch")
 st.subheader("사진과 생활 환경으로 찾는 유기견 입양 매칭")
 
@@ -67,7 +86,8 @@ st.write(
 
 st.markdown(
     """
-- **보호견 둘러보기**: 지역, 크기 등 조건으로 검색하고 공고 마감이 가까운 아이부터 확인
+- **가까운 보호소 찾기** (이 화면): 내 위치나 고른 지역에서 가까운 보호소의 아이들부터 보기
+- **보호견 둘러보기**: 지역, 크기, 나이 등 조건으로 검색
 - **입양 매칭**: 간단한 설문으로 나와 잘 맞을 것 같은 아이 추천
 - **사진으로 찾기**: 강아지 사진을 올리면 생김새가 비슷한 보호견 검색
 """
@@ -81,6 +101,7 @@ if api_key is None:
     )
     st.stop()
 
+inject_card_css()
 st.divider()
 
 try:
@@ -108,14 +129,10 @@ if shelter_error:
     origin = None
 
 if origin is not None:
-    ranked = sort_by_distance(dogs, locator, origin)[:PREVIEW_COUNT]
+    render_shelter_groups(group_by_shelter(sort_by_distance(dogs, locator, origin)))
 else:
-    ranked = [(dog, None) for dog in dogs[:PREVIEW_COUNT]]
-
-cols = st.columns(4)
-for i, (dog, distance) in enumerate(ranked):
-    with cols[i % 4]:
-        render_card(dog, distance)
+    st.caption("최근 등록된 아이들")
+    render_grid(dogs[:LATEST_COUNT], key_prefix="latest")
 
 with st.expander("🔧 데이터 연결 상태"):
     located = sum(1 for d in dogs if locator.locate(d))
@@ -125,6 +142,5 @@ with st.expander("🔧 데이터 연결 상태"):
             "보호소": len(shelters),
             "좌표가 있는 보호소": len(locator.by_reg_no) or len(locator.by_name),
             "보호소 좌표를 찾은 유기견": f"{located} / {len(dogs)}",
-            "기준 위치": origin,
         }
     )
