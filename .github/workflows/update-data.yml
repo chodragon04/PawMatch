@@ -1,0 +1,60 @@
+# 1시간마다 공공데이터 API에서 보호견·보호소 데이터를 받아 `data` 브랜치에 저장합니다.
+# 앱(pawmatch/data.py)은 이 파일을 먼저 읽어서, 첫 화면을 API 응답을 기다리지 않고 보여줍니다.
+#
+# 필요한 설정: 저장소 Settings → Secrets and variables → Actions → New repository secret
+#   이름: DATA_GO_KR_API_KEY / 값: 공공데이터포털 일반 인증키(Decoding)
+#
+# `data` 브랜치는 매번 커밋 1개로 덮어쓰므로(force push) main의 커밋 기록에 영향을 주지 않습니다.
+
+name: 보호견 데이터 갱신
+
+on:
+  schedule:
+    - cron: "23 * * * *" # 매시 23분 (UTC)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-data
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 패키지 설치
+        run: pip install requests python-dotenv
+
+      - name: 데이터 받기
+        env:
+          DATA_GO_KR_API_KEY: ${{ secrets.DATA_GO_KR_API_KEY }}
+        run: python scripts/fetch_data.py --out out
+
+      - name: data 브랜치에 저장
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd out
+          cat > README.md <<'EOF'
+          # PawMatch 데이터 스냅샷
+
+          GitHub Actions(`.github/workflows/update-data.yml`)가 1시간마다 자동으로 갱신하는 브랜치입니다.
+          직접 수정하지 마세요.
+
+          출처: 공공데이터포털(data.go.kr), 농림축산식품부 농림축산검역본부 국가동물보호정보시스템
+          EOF
+          git init -q -b data
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "보호견 데이터 $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push -q -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" data

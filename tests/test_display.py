@@ -55,3 +55,11 @@ def test_dedupe_by_id_keeps_first_and_items_without_id():
     result = dedupe_by_id(dogs)
     assert [d.get("desertionNo") for d in result] == ["1", "2", None, None]
     assert result[0]["n"] == "a"
+
+
+def test_format_updated_uses_korea_time():
+    from datetime import datetime, timezone
+
+    from pawmatch.display import format_updated
+
+    assert format_updated(datetime(2026, 11, 3, 5, 7, tzinfo=timezone.utc)) == "11월 3일 14:07 기준"
