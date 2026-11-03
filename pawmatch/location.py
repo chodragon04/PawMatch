@@ -1,13 +1,59 @@
-"""기준 위치 고르기: 브라우저 위치(streamlit-js-eval) 또는 시/도 선택."""
+"""기준 위치 고르기: 브라우저 위치(streamlit-js-eval) 또는 시/도 → 시/군/구 선택."""
 
 from __future__ import annotations
 
 import streamlit as st
 from streamlit_js_eval import get_geolocation
 
+from pawmatch.config import get_kakao_key
 from pawmatch.geo import REGION_CENTERS
+from pawmatch.kakao import geocode_region
+from pawmatch.regions import load_regions
 
 MY_LOCATION, PICK_REGION = "📍 내 위치로 찾기", "🗺️ 지역 선택"
+WHOLE_SIDO = "전체"
+
+
+@st.cache_data(ttl=7 * 24 * 3600, show_spinner=False)
+def _cached_geocode(sido: str, sigungu: str, api_key: str) -> tuple[float, float]:
+    pos = geocode_region(sido, sigungu, api_key)
+    if pos is None:  # 실패한 결과는 캐시하지 않고 다음에 다시 시도합니다
+        raise LookupError(f"{sido} {sigungu}")
+    return pos
+
+
+def locate_sigungu(sido: str, sigungu: str) -> tuple[float, float] | None:
+    """시/군/구 중심 좌표. 카카오 API 키가 없거나 찾지 못하면 None."""
+    api_key = get_kakao_key()
+    if not api_key:
+        return None
+    try:
+        return _cached_geocode(sido, sigungu, api_key)
+    except LookupError:
+        return None
+
+
+def pick_region(key: str) -> tuple[float, float]:
+    """시/도와 시/군/구를 고르게 하고 기준 위치를 돌려줍니다."""
+    regions = load_regions()
+    col_sido, col_sigungu = st.columns(2)
+    sido = col_sido.selectbox("시/도", list(REGION_CENTERS), index=0, key=f"{key}_region")
+    options = [WHOLE_SIDO, *regions.get(sido, ())]
+    # 시/도가 바뀌면 시/군/구 선택을 처음(전체)으로 되돌리도록 key에 시/도를 넣습니다.
+    sigungu = col_sigungu.selectbox(
+        "시/군/구", options, index=0, key=f"{key}_sigungu_{sido}", disabled=len(options) == 1
+    )
+
+    if sigungu != WHOLE_SIDO:
+        pos = locate_sigungu(sido, sigungu)
+        if pos is not None:
+            st.caption(f"{sido} {sigungu} 위치를 기준으로 거리를 계산합니다.")
+            return pos
+        st.caption(f"{sigungu} 위치를 찾지 못해 {sido} 시청/도청 위치를 기준으로 거리를 계산합니다.")
+        return REGION_CENTERS[sido]
+
+    st.caption(f"{sido} 시청/도청 위치를 기준으로 거리를 계산합니다.")
+    return REGION_CENTERS[sido]
 
 
 def pick_origin(key: str = "origin") -> tuple[float, float] | None:
@@ -17,9 +63,7 @@ def pick_origin(key: str = "origin") -> tuple[float, float] | None:
     )
 
     if mode == PICK_REGION:
-        region = st.selectbox("지역", list(REGION_CENTERS), index=0, key=f"{key}_region")
-        st.caption(f"{region} 시청/도청 위치를 기준으로 거리를 계산합니다.")
-        return REGION_CENTERS[region]
+        return pick_region(key)
 
     st.caption("위치 정보는 가까운 보호소를 찾는 데에만 쓰이며 저장되지 않습니다.")
     loc = get_geolocation(component_key=f"{key}_geolocation")
