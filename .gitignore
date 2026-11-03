@@ -1,0 +1,24 @@
+# 환경 변수 / 비밀 키
+.env
+.streamlit/secrets.toml
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# 데이터 캐시 (API 응답, 이미지 임베딩 등)
+data/*
+!data/.gitkeep
+
+# 에디터 / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
