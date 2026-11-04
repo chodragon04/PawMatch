@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import re
+from typing import Callable
 from urllib.parse import quote
 
 import streamlit as st
 
 from pawmatch.display import adoption_status, dog_facts, format_shelter_hours
-from pawmatch.ui import carousel_html
+from pawmatch.geo import ShelterLocator
+from pawmatch.ui import carousel_html, render_card
 
 MASKED_TEL_RE = re.compile(r"^\*+$")
 
@@ -79,3 +81,44 @@ def render_dog_detail(
     if cautions:
         st.markdown("**미리 알아두면 좋은 점**\n\n" + "\n".join(f"- ⚠️ {c}" for c in cautions))
     st.caption("점수와 정보는 보호소가 입력한 공공데이터를 바탕으로 해요. 입양 전 보호소에 꼭 확인해 주세요.")
+
+
+def open_detail(dog: dict, shelter: dict | None = None, **detail_kwargs) -> None:
+    """유기견 상세 정보를 모달 창으로 엽니다. detail_kwargs는 render_dog_detail에 그대로 넘깁니다."""
+    title = dog.get("kindFullNm") or dog.get("kindNm") or "아이 정보"
+
+    @st.dialog(title, width="large")
+    def _dialog() -> None:
+        render_dog_detail(dog, shelter, **detail_kwargs)
+
+    _dialog()
+
+
+def detail_button(dog: dict, locator: ShelterLocator, key: str, **detail_kwargs) -> None:
+    """'자세히 보기' 버튼. 누르면 상세 정보 창을 엽니다."""
+    if st.button("🔍 자세히 보기", key=key, width="stretch"):
+        open_detail(dog, locator.shelter_info(dog), **detail_kwargs)
+
+
+def render_dog_cards(
+    dogs: list[dict],
+    locator: ShelterLocator,
+    columns: int = 4,
+    key_prefix: str = "dog",
+    badge: Callable[[dict], str | None] | None = None,
+    detail_kwargs: Callable[[dict], dict] | None = None,
+) -> None:
+    """유기견 카드 그리드. 카드마다 '자세히 보기' 버튼이 있습니다.
+
+    badge(dog)는 카드에 붙일 마크다운 배지(예: 적합도), detail_kwargs(dog)는 상세 창에 넘길 값입니다.
+    """
+    for start in range(0, len(dogs), columns):
+        cols = st.columns(columns)
+        for col, (i, dog) in zip(cols, enumerate(dogs[start : start + columns], start)):
+            with col, st.container(border=True):
+                render_card(dog, key_prefix=f"{key_prefix}{i}")
+                text = badge(dog) if badge else None
+                if text:
+                    st.markdown(text)
+                extra = detail_kwargs(dog) if detail_kwargs else {}
+                detail_button(dog, locator, key=f"{key_prefix}_detail_{i}_{dog.get('desertionNo')}", **extra)

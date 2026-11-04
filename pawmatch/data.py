@@ -1,12 +1,14 @@
 """보호견·보호소 데이터를 불러옵니다.
 
-공공데이터 API는 한 번 요청에 2~9초가 걸리고 가끔 연결이 끊겨서, GitHub Actions가 1시간마다
+공공데이터 API는 한 번 요청에 2~9초가 걸리고 가끔 연결이 끊겨서, GitHub Actions가 30분마다
 데이터를 받아 `data` 브랜치에 스냅샷 파일로 저장해 둡니다(.github/workflows/update-data.yml).
+GitHub의 예약 실행은 몇 시간씩 밀리거나 건너뛰는 경우가 있어서(실제로 4~7시간 간격으로 실행됨),
+스냅샷을 6시간까지는 최신으로 봅니다.
 앱은 아래 순서로 데이터를 찾습니다.
 
 1. 로컬 스냅샷 (data/snapshot/snapshot.json.gz, `python scripts/fetch_data.py`로 생성)
 2. GitHub `data` 브랜치의 스냅샷
-3. 스냅샷이 없거나 오래됐으면(3시간 초과) 공공데이터 API 직접 호출
+3. 스냅샷이 없거나 오래됐으면(6시간 초과) 공공데이터 API 직접 호출
 4. API도 실패하면 오래된 스냅샷이라도 사용
 """
 
@@ -29,7 +31,7 @@ LOCAL_SNAPSHOT_DIR = Path(__file__).resolve().parent.parent / "data" / "snapshot
 REMOTE_SNAPSHOT_URL = os.getenv(
     "PAWMATCH_SNAPSHOT_URL", "https://raw.githubusercontent.com/chodragon04/PawMatch/data"
 )
-MAX_SNAPSHOT_AGE = timedelta(hours=3)
+MAX_SNAPSHOT_AGE = timedelta(hours=6)
 MIN_DOGS = 100  # 이보다 적으면 API가 잘못된 응답을 준 것으로 보고 스냅샷을 저장하지 않습니다
 
 # 화면에 쓰지 않는 개인 정보는 스냅샷에 저장하지 않습니다.
