@@ -1,0 +1,47 @@
+# 배포된 앱(https://pawmatch-kr.streamlit.app)이 잠들지 않게 3시간마다 실제 브라우저로 열어 봅니다.
+#
+# Streamlit Community Cloud는 약 12시간 동안 접속이 없으면 앱을 재웁니다. 주소에 요청만 보내는 것으로는
+# 앱이 시작되지 않아서 헤드리스 브라우저(Playwright)로 화면을 열고, 잠들어 있으면 깨우기 버튼을 누릅니다.
+# GitHub 예약 실행은 몇 시간씩 밀리기도 해서 12시간보다 넉넉하게 3시간마다 실행합니다.
+# 앱 화면이 뜨지 않으면 실패로 표시되어 저장소 주인에게 알림이 갑니다.
+
+name: 앱 깨우기
+
+on:
+  schedule:
+    - cron: "41 */3 * * *" # 3시간마다 41분 (UTC)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: keep-awake
+  cancel-in-progress: true
+
+jobs:
+  wake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: 브라우저 준비
+        run: |
+          pip install "playwright>=1.48,<2"
+          python -m playwright install --with-deps chromium
+
+      - name: 앱 열기
+        run: python scripts/wake_app.py
+
+      - name: 실패 화면 저장
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wake-app-failed
+          path: wake_app_failed.png
+          if-no-files-found: ignore
