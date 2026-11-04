@@ -13,12 +13,6 @@ from pawmatch.display import parse_ymd
 from pawmatch.geo import address_in_area
 from pawmatch.matching import MatchResult, Survey, breed_name, score_dog
 
-# ---------------------------------------------------------------- 화면 상태 key (두 화면이 같이 씀)
-
-STATE_PREFIX = "browse_"  # 둘러보기 화면 위젯 key의 앞부분
-ORDER_KEY, LIMIT_KEY = f"{STATE_PREFIX}order", f"{STATE_PREFIX}limit"
-MATCH_SURVEY_KEY = "match_survey"  # 입양 매칭 화면이 설문 답변(matching.Survey)을 저장하는 곳
-
 # ---------------------------------------------------------------- 선택지
 
 NOTICE, ADOPTABLE = "notice", "adoptable"

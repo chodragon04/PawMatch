@@ -4,6 +4,7 @@ import streamlit as st
 
 from pawmatch import browse as B
 from pawmatch import matching as M
+from pawmatch import state as S
 from pawmatch import traits as T
 from pawmatch.detail import detail_button
 from pawmatch.geo import ShelterLocator, sort_by_distance
@@ -16,52 +17,67 @@ COLUMNS = 3
 MAX_REASONS, MAX_CAUTIONS = 3, 2
 
 DISTANCE_OPTIONS = {"상관없음": None, "10km 이내": 10.0, "30km 이내": 30.0, "50km 이내": 50.0, "100km 이내": 100.0}
-SIZE_OPTIONS = {M.ANY: "상관없음", **T.SIZE_LABELS}
-AGE_OPTIONS = {M.ANY: "상관없음", **T.AGE_LABELS}
+SEX_LABELS = {"M": "수컷", "F": "암컷"}
+K = S.match_key  # 입력칸 key: 다른 화면에 갔다 와도 값이 남도록 key와 persist_state를 줍니다
+PREF_KEYS = [K("sizes"), K("ages"), K("sex"), K("breeds")]
 
 
 def survey_form(max_km: float | None, breeds: list[tuple[str, int]]) -> M.Survey | None:
     """설문을 보여주고, 제출하면 응답을 돌려줍니다."""
+    keep = {"persist_state": S.PERSIST}
     with st.form("match_survey_form"):
         st.markdown("##### 2. 생활 환경")
-        home = st.radio("어디에 살고 계신가요?", list(M.HOME_LABELS), format_func=M.HOME_LABELS.get, horizontal=True)
+        home = st.radio(
+            "어디에 살고 계신가요?", list(M.HOME_LABELS), format_func=M.HOME_LABELS.get, horizontal=True,
+            key=K("home"), **keep,
+        )  # fmt: skip
         walk = st.radio(
             "하루에 산책을 얼마나 해줄 수 있나요?", list(M.WALK_LABELS), format_func=M.WALK_LABELS.get, index=1,
-            horizontal=True,
+            horizontal=True, key=K("walk"), **keep,
         )  # fmt: skip
         away = st.radio(
             "평일에 집을 비우는 시간은 얼마나 되나요?", list(M.AWAY_LABELS), format_func=M.AWAY_LABELS.get, index=1,
-            horizontal=True,
+            horizontal=True, key=K("away"), **keep,
         )  # fmt: skip
         first_dog = st.radio(
             "반려견을 키워 본 적이 있나요?", [True, False], horizontal=True,
-            format_func=lambda first: "처음이에요" if first else "키워 본 적 있어요",
+            format_func=lambda first: "처음이에요" if first else "키워 본 적 있어요", key=K("first"), **keep,
         )  # fmt: skip
         st.write("함께 사는 가족")
-        has_kids = st.checkbox("어린 아이가 있어요")
-        has_pets = st.checkbox("다른 반려동물이 있어요")
+        has_kids = st.checkbox("어린 아이가 있어요", key=K("kids"), **keep)
+        has_pets = st.checkbox("다른 반려동물이 있어요", key=K("pets"), **keep)
 
-        health_ok = st.checkbox("치료나 보살핌이 더 필요한 아이도 괜찮아요")
+        health_ok = st.checkbox("치료나 보살핌이 더 필요한 아이도 괜찮아요", key=K("health"), **keep)
 
         # 원하는 조건으로 직접 찾는 건 '보호견 둘러보기'의 역할이라, 여기서는 접어 두는 보조 항목입니다.
-        with st.expander("3. 원하는 아이가 따로 있다면 (선택)"):
-            c1, c2, c3 = st.columns(3)
-            pref_size = c1.selectbox("크기", list(SIZE_OPTIONS), format_func=SIZE_OPTIONS.get)
-            pref_age = c2.selectbox("나이", list(AGE_OPTIONS), format_func=AGE_OPTIONS.get)
-            pref_sex = c3.selectbox("성별", list(M.SEX_PREF_LABELS), format_func=M.SEX_PREF_LABELS.get)
+        # 고른 조건이 있으면(둘러보기에서 가져온 경우 포함) 펼쳐서 보여줍니다.
+        has_prefs = any(st.session_state.get(k) for k in PREF_KEYS)
+        with st.expander("3. 원하는 아이가 따로 있다면 (선택)", expanded=has_prefs):
+            c1, c2 = st.columns(2)
+            pref_sizes = c1.pills(
+                "크기", list(T.SIZE_LABELS), selection_mode="multi", format_func=T.SIZE_LABELS.get,
+                key=K("sizes"), **keep,
+            )  # fmt: skip
+            pref_ages = c2.pills(
+                "나이", list(T.AGE_LABELS), selection_mode="multi", format_func=T.AGE_LABELS.get,
+                key=K("ages"), **keep,
+            )  # fmt: skip
+            pref_sex = st.pills("성별", list(SEX_LABELS), format_func=SEX_LABELS.get, key=K("sex"), **keep)
             counts = dict(breeds)
             chosen_breeds = st.multiselect(
-                "품종", [name for name, _ in breeds], format_func=lambda name: f"{name} ({counts[name]:,})",
+                "품종", [name for name, _ in breeds], format_func=lambda name: f"{name} ({counts.get(name, 0):,})",
                 placeholder="모든 품종 (여러 개 고를 수 있어요)",
                 help="품종을 고르면 그 품종의 아이만 추천해요. 괄호 안은 지금 보호 중인 마릿수예요.",
+                key=K("breeds"), **keep,
             )  # fmt: skip
+            st.caption("아무것도 고르지 않으면 상관없음이에요. 여러 개를 고르면 그중 하나만 맞아도 돼요.")
 
         if not st.form_submit_button("🐾 나와 잘 맞는 아이 찾기", type="primary", width="stretch"):
             return None
     return M.Survey(
         home=home, walk=walk, first_dog=first_dog, has_kids=has_kids, has_pets=has_pets, away=away,
-        max_km=max_km, pref_size=pref_size, pref_age=pref_age, pref_sex=pref_sex, health_ok=health_ok,
-        breeds=tuple(chosen_breeds),
+        max_km=max_km, pref_sizes=tuple(pref_sizes or ()), pref_ages=tuple(pref_ages or ()),
+        pref_sex=pref_sex or M.ANY, health_ok=health_ok, breeds=tuple(chosen_breeds),
     )  # fmt: skip
 
 
@@ -94,17 +110,24 @@ st.write(
 inject_card_css()
 data = load_data_or_stop()
 
+notice = st.session_state.pop(S.MATCH_NOTICE, None)
+if notice:
+    st.success(notice, icon="🐶")
+
 st.markdown("##### 1. 어디에서 찾을까요?")
-origin = pick_origin("match")
-distance_label = st.selectbox("보호소까지 거리", list(DISTANCE_OPTIONS), index=0, disabled=origin is None)
+origin = pick_origin(S.MATCH)
+distance_label = st.selectbox(
+    "보호소까지 거리", list(DISTANCE_OPTIONS), index=0, disabled=origin is None, key=K("distance"),
+    persist_state=S.PERSIST,
+)  # fmt: skip
 max_km = DISTANCE_OPTIONS[distance_label] if origin is not None else None
 
 submitted = survey_form(max_km, M.breed_options(data.dogs))
 if submitted is not None:
-    st.session_state[B.MATCH_SURVEY_KEY] = submitted
+    st.session_state[S.MATCH_SURVEY] = submitted
     st.session_state.match_limit = PAGE_SIZE
 
-survey: M.Survey | None = st.session_state.get(B.MATCH_SURVEY_KEY)
+survey: M.Survey | None = st.session_state.get(S.MATCH_SURVEY)
 if survey is None:
     st.stop()
 
@@ -146,8 +169,8 @@ with st.container(border=True):
         "지역·크기·나이 같은 조건으로 좁혀 보면서 **나와 잘 맞는 순**으로 정렬해 보세요."
     )
     if st.button("보호견 둘러보기에서 나와 잘 맞는 순으로 보기", icon="🐶"):
-        st.session_state[B.ORDER_KEY] = B.FIT
-        st.session_state.pop(B.LIMIT_KEY, None)  # 둘러보기는 처음 개수부터
+        st.session_state[S.BROWSE_ORDER] = B.FIT
+        st.session_state.pop(S.BROWSE_LIMIT, None)  # 둘러보기는 처음 개수부터
         st.switch_page("views/browse.py")
 
 with st.expander("점수는 이렇게 계산해요"):
@@ -161,7 +184,7 @@ with st.expander("점수는 이렇게 계산해요"):
                 "| 성격 | 20 | 특징 메모의 '온순', '사람 좋아함', '겁', '입질' 등과 반려 경험·가족 구성 |",
                 "| 돌봄 시간 | 15 | 집을 비우는 시간과 나이 (어린 강아지는 오래 혼자 두기 어려워요) |",
                 "| 거리 | 15 | 기준 위치에서 보호소까지 거리 |",
-                "| 선호 | 5 | 원하는 크기·나이·성별, 치료가 필요한 아이 괜찮은지 |",
+                "| 선호 | 5 | 원하는 크기·나이(여러 개 가능)·성별, 치료가 필요한 아이 괜찮은지 |",
             ]
         )
     )
