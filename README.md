@@ -93,7 +93,7 @@ PawMatch/
 3. API 키 설정 (선택)
 
    API 키가 없어도 GitHub `data` 브랜치에 저장된 데이터(30분마다 갱신)로 실행됩니다.
-   저장된 데이터가 6시간 넘게 갱신되지 않았을 때 API를 직접 호출하려면 키가 필요합니다.
+   저장된 데이터가 오래됐을 때 앱이 뒤에서 API로 새로 받으려면 키가 필요합니다.
 
    [공공데이터포털](https://www.data.go.kr/)에서 "구조동물 조회 서비스"를 활용신청한 뒤,
    `.env.example`을 복사해 `.env`를 만들고 일반 인증키(Decoding)를 넣습니다.
@@ -145,12 +145,15 @@ PawMatch/
 ```
 GitHub Actions (매시 7분·37분)        Streamlit 앱
   scripts/fetch_data.py                 pawmatch/data.py
-  공공데이터 API → snapshot.json.gz  →  ① 로컬 스냅샷 ② data 브랜치 스냅샷
-  data 브랜치에 저장 (force push)       ③ 6시간 넘게 오래됐으면 API 직접 호출
+  공공데이터 API → snapshot.json.gz  →  ① 로컬·data 브랜치 스냅샷 중 새 것을 바로 표시
+  data 브랜치에 저장 (force push)       ② 40분보다 오래됐으면 뒤에서 새로 받아 바꿔 끼움
 ```
 
 - `data` 브랜치는 매번 커밋 1개로 덮어써서 main의 커밋 기록에 영향을 주지 않습니다.
-- GitHub의 예약 실행은 몇 시간씩 밀리거나 건너뛰는 경우가 있어서, 30분마다 실행하고 스냅샷을 6시간까지 최신으로 봅니다.
+- GitHub의 예약 실행은 몇 시간씩 밀리거나 건너뛰는 경우가 있습니다(실제로 6시간 넘게 안 돈 적이 있음).
+  그래서 앱은 **가진 데이터를 먼저 바로 보여주고**, 데이터가 40분보다 오래됐으면 **뒤에서** 새 스냅샷을 확인하고
+  그래도 오래됐으면 API에서 직접 받아 바꿔 끼웁니다(5분에 한 번까지만 시도). 받은 데이터는 서버 안에서 모든 사용자가 같이 씁니다.
+  첫 화면이 API 응답(5~15초)을 기다리는 경우는 저장된 스냅샷이 하나도 없을 때뿐입니다.
 - 설정: 저장소 **Settings → Secrets and variables → Actions → New repository secret**에
   `DATA_GO_KR_API_KEY`(일반 인증키, Decoding)를 등록합니다.
 - 수동 실행: **Actions → 보호견 데이터 갱신 → Run workflow**

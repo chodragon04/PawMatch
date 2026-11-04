@@ -12,13 +12,6 @@ DOGS = [{"desertionNo": str(i), "careOwnerNm": "홍길동", "rfidCd": "410"} for
 SHELTERS = [{"careNm": "A", "lat": "37.5", "lng": "127.0"}]
 
 
-LIMIT_H = D.MAX_SNAPSHOT_AGE.total_seconds() / 3600  # 최신으로 보는 기준(시간)
-
-
-def make(age_hours, source=D.SNAPSHOT):
-    return D.Dataset([{"desertionNo": "s"}], SHELTERS, NOW - timedelta(hours=age_hours), source)
-
-
 def test_snapshot_roundtrip_drops_personal_fields(tmp_path):
     D.write_snapshot(tmp_path, DOGS, SHELTERS, NOW)
     loaded = D.read_local_snapshot(tmp_path)
@@ -38,54 +31,115 @@ def test_broken_snapshot_is_ignored(tmp_path):
     assert D.read_local_snapshot(tmp_path) is None
 
 
-@pytest.fixture
-def sources(monkeypatch):
-    state = {"local": None, "remote": None, "live": None, "live_calls": 0}
+class Clock:
+    def __init__(self, now):
+        self.now = now
 
-    def live(key):
-        state["live_calls"] += 1
-        if isinstance(state["live"], Exception):
-            raise state["live"]
-        return state["live"]
-
-    monkeypatch.setattr(D, "read_local_snapshot", lambda: state["local"])
-    monkeypatch.setattr(D, "read_remote_snapshot", lambda: state["remote"])
-    monkeypatch.setattr(D, "fetch_live", live)
-    return state
+    def __call__(self):
+        return self.now
 
 
-def test_fresh_snapshot_is_used_without_calling_api(sources):
-    sources["remote"] = make(1)
-    assert D.load_dataset("KEY", NOW) is sources["remote"]
-    assert sources["live_calls"] == 0
+class Sources:
+    """DataStore에 넣을 가짜 읽기 함수들. 뒤에서 하는 작업은 바로(동기로) 실행해 결과를 확인합니다."""
+
+    def __init__(self):
+        self.local = self.remote = self.live = None
+        self.calls = {"remote": 0, "live": 0}
+        self.background: list = []
+        self.clock = Clock(NOW)
+
+    def read_remote(self):
+        self.calls["remote"] += 1
+        return self.remote
+
+    def fetch(self, key):
+        self.calls["live"] += 1
+        if isinstance(self.live, Exception):
+            raise self.live
+        return self.live
+
+    def store(self, run_now=True):
+        run = (lambda job: job()) if run_now else self.background.append
+        return D.DataStore(lambda: self.local, self.read_remote, self.fetch, run, self.clock)
 
 
-def test_stale_snapshot_falls_back_to_api(sources):
-    sources["remote"] = make(LIMIT_H + 1)
-    sources["live"] = make(0, D.API)
-    assert D.load_dataset("KEY", NOW).source == D.API
+def at(minutes_old, source=D.SNAPSHOT):
+    return D.Dataset([{"desertionNo": "s"}], SHELTERS, NOW - timedelta(minutes=minutes_old), source)
 
 
-def test_api_failure_uses_newest_stale_snapshot(sources):
-    sources["local"], sources["remote"] = make(LIMIT_H + 5), make(LIMIT_H + 1)
-    sources["live"] = ApiError("down")
-    result = D.load_dataset("KEY", NOW)
-    assert result is sources["remote"] and result.source == D.STALE_SNAPSHOT
+def test_fresh_snapshot_is_used_without_calling_api():
+    src = Sources()
+    src.remote = at(10)
+    assert src.store().get("KEY") is src.remote
+    assert src.calls["live"] == 0
 
 
-def test_works_without_api_key_when_snapshot_exists(sources):
-    sources["remote"] = make(1)
-    assert D.load_dataset(None, NOW).source == D.SNAPSHOT
+def test_old_snapshot_is_shown_immediately_and_refreshed_in_background():
+    src = Sources()
+    src.remote = at(8 * 60)  # GitHub 예약 실행이 8시간 밀린 상황
+    src.live = at(0, D.API)
+    store = src.store(run_now=False)
+    first = store.get("KEY")
+    assert first is src.remote  # API를 기다리지 않고 바로 보여줌
+    assert store.refreshing and len(src.background) == 1
+    src.background.pop()()  # 뒤에서 하던 작업이 끝남
+    assert store.get("KEY") is src.live and not store.refreshing
 
 
-def test_nothing_available_raises(sources):
+def test_newer_snapshot_found_in_background_skips_api():
+    src = Sources()
+    src.remote = at(8 * 60)
+    store = src.store(run_now=False)
+    store.get("KEY")
+    src.remote = at(5)  # 그사이 GitHub Actions가 새 스냅샷을 만듦
+    src.background.pop()()
+    assert store.get("KEY") is src.remote and src.calls["live"] == 0
+
+
+def test_background_failure_keeps_current_data_and_waits_before_retry():
+    src = Sources()
+    src.remote = at(8 * 60)
+    src.live = ApiError("down")
+    store = src.store()
+    assert store.get("KEY") is src.remote
+    assert store.last_error == "down" and src.calls["live"] == 1
+    store.get("KEY")  # 바로 다시 와도 RECHECK_EVERY 동안은 재시도하지 않음
+    assert src.calls["live"] == 1
+    src.clock.now = NOW + D.RECHECK_EVERY + timedelta(seconds=1)
+    store.get("KEY")
+    assert src.calls["live"] == 2
+
+
+def test_only_one_background_refresh_at_a_time():
+    src = Sources()
+    src.remote = at(8 * 60)
+    store = src.store(run_now=False)
+    store.get("KEY")
+    src.clock.now = NOW + timedelta(hours=1)
+    store.get("KEY")
+    assert len(src.background) == 1
+
+
+def test_without_api_key_old_snapshot_is_still_used():
+    src = Sources()
+    src.remote = at(8 * 60)
+    assert src.store().get(None) is src.remote
+    assert src.calls["live"] == 0
+
+
+def test_no_snapshot_waits_for_api_or_raises():
+    src = Sources()
+    src.live = at(0, D.API)
+    assert src.store().get("KEY") is src.live
     with pytest.raises(ApiError):
-        D.load_dataset(None, NOW)
-    sources["live"] = ApiError("down")
+        Sources().store().get(None)
+    failing = Sources()
+    failing.live = ApiError("down")
     with pytest.raises(ApiError, match="down"):
-        D.load_dataset("KEY", NOW)
+        failing.store().get("KEY")
 
 
-def test_snapshot_is_fresh_up_to_the_limit(sources):
-    sources["remote"] = make(LIMIT_H - 0.5)  # 예약 실행이 몇 시간 밀려도 스냅샷을 씀
-    assert D.load_dataset("KEY", NOW) is sources["remote"] and sources["live_calls"] == 0
+def test_newest_of_local_and_remote_is_used():
+    src = Sources()
+    src.local, src.remote = at(30), at(10)
+    assert src.store().get("KEY") is src.remote
