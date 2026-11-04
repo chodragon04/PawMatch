@@ -15,7 +15,7 @@
 | 보호견 둘러보기 | 원하는 조건(지역·크기·나이·성별·상태·품종·검색어)으로 직접 찾기, 최근 등록순·공고 마감 임박순·오래 기다린 순 정렬. 입양 매칭 설문을 했다면 '나와 잘 맞는 순'과 적합도 표시. 고른 조건을 입양 매칭으로 가져가기 | 완료 |
 | 마감 임박 우선 보기 | 보호견 둘러보기의 '공고 마감 임박순' 정렬 | 완료 |
 | 입양 매칭 | 생활 환경 설문(주거 형태, 산책 시간, 반려 경험, 가족 구성, 집 비우는 시간)으로 적합도 점수를 계산해 추천 이유·주의할 점과 함께 추천. 원하는 크기·나이·성별·품종은 선택 항목. '자세히 보기'로 사진 넘겨 보기·상세 정보·보호소 주소와 연락처 확인 | 완료 |
-| 사진으로 찾기 | 강아지 사진을 올리면 생김새가 비슷한 보호견 검색 | 예정 |
+| 사진으로 찾기 | 강아지 사진을 올리거나 찍으면 사전학습 이미지 모델(CLIP)로 생김새가 비슷한 보호견 검색, 지역으로 좁히기 | 완료 |
 | 화면 이동 | 모든 화면 위 바로가기 버튼 줄(모바일에서도 항상 보임), 홈 바로가기 카드. 다른 화면에 갔다 와도 입력한 조건 유지 | 완료 |
 | 데이터 자동 갱신 | GitHub Actions가 30분마다 데이터를 받아 두어 첫 화면이 빠르게 열림 | 완료 |
 
@@ -28,7 +28,7 @@
 - **언어**: Python 3.10+
 - **웹 프레임워크**: [Streamlit](https://streamlit.io/)
 - **데이터**: 공공데이터포털 국가동물보호정보시스템 구조동물 조회 서비스
-- **이미지 검색**: 사전학습 이미지 모델(CLIP) (예정)
+- **이미지 검색**: 사전학습 이미지 모델 CLIP ViT-B/32 (ONNX), [fastembed](https://github.com/qdrant/fastembed) + onnxruntime (PyTorch 없이 CPU로 실행)
 - **데이터 갱신**: GitHub Actions (30분마다 실행, `data` 브랜치에 스냅샷 저장)
 - **배포**: [Streamlit Community Cloud](https://streamlit.io/cloud) (GitHub 푸시 시 자동 반영)
 
@@ -57,9 +57,10 @@ PawMatch/
 │   ├── display.py       # 나이·성별·공고 상태 표시 문구
 │   ├── ui.py            # 유기견 카드·사진 캐러셀 (사진 대체 처리 포함), 데이터 로딩 화면
 │   ├── detail.py        # 유기견 상세 정보 창 (사진, 정보, 보호소 주소·연락처)
-│   └── image_search.py  # 이미지 유사도 검색
+│   └── image_search.py  # 사진으로 찾기: CLIP 임베딩 만들기·저장·유사도 검색
 ├── scripts/
 │   ├── fetch_data.py    # 데이터 받아서 스냅샷 파일로 저장 (GitHub Actions에서 실행)
+│   ├── build_embeddings.py # 보호견 사진 임베딩 만들기 (GitHub Actions에서 실행)
 │   └── build_regions.py # 구조동물 API의 시/도·시/군/구 목록으로 regions.json 생성
 ├── .github/workflows/
 │   └── update-data.yml  # 30분마다 데이터 갱신
@@ -158,6 +159,20 @@ GitHub Actions (매시 7분·37분)        Streamlit 앱
   `DATA_GO_KR_API_KEY`(일반 인증키, Decoding)를 등록합니다.
 - 수동 실행: **Actions → 보호견 데이터 갱신 → Run workflow**
 - 화면에 쓰지 않는 개인 정보(보호소 대표자 이름, 동물등록번호)는 스냅샷에 저장하지 않습니다.
+- 같은 워크플로에서 '사진으로 찾기'용 보호견 사진 임베딩(`embeddings.npz`)도 만듭니다(`scripts/build_embeddings.py`).
+  이전에 계산한 사진은 다시 계산하지 않고 새로 들어온 아이의 사진만 계산하며, 한 번에 최대 30분까지만 계산하고 남은 사진은 다음 실행에서 이어 갑니다.
+
+## 사진으로 찾기
+
+- 보호견마다 사진을 최대 3장 골라, CLIP 이미지 인코더로 512차원 벡터(임베딩)를 미리 계산해 둡니다.
+- 사용자가 올린 사진도 같은 모델로 벡터를 만들고, 코사인 유사도가 높은 순으로 보여줍니다.
+  한 아이의 사진이 여러 장이면 가장 닮은 사진의 점수를 쓰고, 카드에도 그 사진을 먼저 보여줍니다.
+- 직접 잰 결과 (보호견 389마리, 같은 아이의 다른 사진으로 검색): 같은 아이가 1위 82%, 5위 안 90%, 10위 안 93%.
+  같은 아이 사진끼리 유사도 중앙값 0.95, 다른 아이끼리 0.75, 강아지가 아닌 그림은 0.55~0.60이라
+  가장 닮은 아이가 0.7보다 낮으면 "많이 닮은 아이를 찾지 못했어요"라고 안내합니다.
+  (같은 아이의 사진은 같은 장소에서 찍은 경우가 많아 배경이 점수를 높였을 수 있습니다)
+- 사진 한 장 분석 약 70ms, 모델(약 340MB)은 서버가 처음 쓸 때 한 번 내려받아 모든 사용자가 같이 씁니다.
+- 올린 사진은 비슷한 아이를 찾는 데에만 쓰고 저장하지 않습니다.
 
 ## 입양 매칭 점수
 
@@ -206,6 +221,10 @@ GitHub Actions (매시 7분·37분)        Streamlit 앱
 - [streamlit-js-eval](https://github.com/aghasemi/streamlit_js_eval) (MIT License): 브라우저 위치 정보(Geolocation) 가져오기에 사용
 - [공공데이터포털](https://www.data.go.kr/)
 - [카카오 로컬 API](https://developers.kakao.com/docs/latest/ko/local/dev-guide): 시/군/구 위치(좌표) 찾기에 사용
+- [CLIP](https://github.com/openai/CLIP) (OpenAI, MIT License): 사진으로 찾기의 이미지 모델 (ViT-B/32).
+  Radford et al., "Learning Transferable Visual Models From Natural Language Supervision", 2021
+- [Qdrant/clip-ViT-B-32-vision](https://huggingface.co/Qdrant/clip-ViT-B-32-vision) (MIT License): CLIP 이미지 인코더를 ONNX로 변환한 모델 파일
+- [fastembed](https://github.com/qdrant/fastembed) (Apache License 2.0), [ONNX Runtime](https://github.com/microsoft/onnxruntime) (MIT License): 모델 실행
 - 본 프로젝트는 AI 코딩 도구(Anthropic Claude)의 도움을 받아 개발했습니다.
 
 ## 라이선스

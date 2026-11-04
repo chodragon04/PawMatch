@@ -4,19 +4,17 @@ from __future__ import annotations
 
 import html
 import json
-import re
 
 import streamlit as st
 
 from pawmatch.api import ApiError
 from pawmatch.config import get_api_key
 from pawmatch.data import STORE, WARN_AFTER, Dataset
-from pawmatch.display import adoption_status, format_age, format_sex, format_updated
+from pawmatch.display import adoption_status, format_age, format_sex, format_updated, photo_urls
 
 PHOTO_FAIL_TITLE = "사진을 불러오지 못했어요"
 PHOTO_FAIL_DETAIL = "보호소에 문의하면 아이의 모습을 확인할 수 있어요"
 
-_POPFILE_RE = re.compile(r"^popfile(\d+)$")
 
 CARD_CSS = """
 <style>
@@ -54,33 +52,6 @@ _FALLBACK_JS = """
 })();
 </script>
 """
-
-
-# 국가동물보호정보시스템 사진 서버는 https도 지원하지만 API는 http 주소를 줍니다.
-# https 페이지에서 http 사진을 섞어 쓰지 않도록 https로 바꿔 씁니다.
-_HTTPS_PHOTO_HOSTS = ("openapi.animal.go.kr",)
-
-
-def _prefer_https(url: str) -> str:
-    for host in _HTTPS_PHOTO_HOSTS:
-        prefix = f"http://{host}/"
-        if url.lower().startswith(prefix):
-            return f"https://{host}/" + url[len(prefix) :]
-    return url
-
-
-def photo_urls(dog: dict) -> list[str]:
-    """popfile1, popfile2, ... 순서로 사용 가능한 사진 주소 목록 (중복 제외)."""
-    keyed = []
-    for key, value in dog.items():
-        m = _POPFILE_RE.match(key)
-        if m and isinstance(value, str) and value.strip().lower().startswith(("http://", "https://")):
-            keyed.append((int(m.group(1)), _prefer_https(value.strip())))
-    urls: list[str] = []
-    for _, url in sorted(keyed):
-        if url not in urls:
-            urls.append(url)
-    return urls
 
 
 def photo_html(dog: dict, element_id: str) -> str:

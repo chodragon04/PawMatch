@@ -56,7 +56,7 @@ st.write(
 SHORTCUTS = [
     ("views/browse.py", "🐶", "보호견 둘러보기", "원하는 아이가 있다면 지역, 크기, 나이, 품종 같은 조건으로 직접 찾아보세요."),
     ("views/match.py", "🏠", "입양 매칭", "어떤 아이가 맞을지 모르겠다면 생활 환경을 알려주세요. 잘 맞는 아이와 그 이유를 알려드려요."),
-    ("views/photo_search.py", "📷", "사진으로 찾기", "강아지 사진을 올리면 생김새가 비슷한 보호견을 찾아드려요. (준비 중)"),
+    ("views/photo_search.py", "📷", "사진으로 찾기", "강아지 사진을 올리거나 찍으면 생김새가 비슷한 보호견을 찾아드려요."),
 ]  # fmt: skip
 for col, (path, icon, title, text) in zip(st.columns(len(SHORTCUTS)), SHORTCUTS):
     with col, st.container(border=True, height="stretch"):

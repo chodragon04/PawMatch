@@ -123,3 +123,32 @@ def dog_facts(dog: dict) -> list[tuple[str, str]]:
         ("공고 번호", (dog.get("noticeNo") or "").strip()),
     ]
     return [(label, value) for label, value in facts if value]
+
+
+_POPFILE_RE = re.compile(r"^popfile(\d+)$")
+
+# 국가동물보호정보시스템 사진 서버는 https도 지원하지만 API는 http 주소를 줍니다.
+# https 페이지에서 http 사진을 섞어 쓰지 않도록 https로 바꿔 씁니다.
+_HTTPS_PHOTO_HOSTS = ("openapi.animal.go.kr",)
+
+
+def _prefer_https(url: str) -> str:
+    for host in _HTTPS_PHOTO_HOSTS:
+        prefix = f"http://{host}/"
+        if url.lower().startswith(prefix):
+            return f"https://{host}/" + url[len(prefix) :]
+    return url
+
+
+def photo_urls(dog: dict) -> list[str]:
+    """popfile1, popfile2, ... 순서로 사용 가능한 사진 주소 목록 (중복 제외)."""
+    keyed = []
+    for key, value in dog.items():
+        m = _POPFILE_RE.match(key)
+        if m and isinstance(value, str) and value.strip().lower().startswith(("http://", "https://")):
+            keyed.append((int(m.group(1)), _prefer_https(value.strip())))
+    urls: list[str] = []
+    for _, url in sorted(keyed):
+        if url not in urls:
+            urls.append(url)
+    return urls
