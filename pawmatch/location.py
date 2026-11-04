@@ -9,6 +9,7 @@ from pawmatch.config import get_kakao_key
 from pawmatch.geo import REGION_CENTERS
 from pawmatch.kakao import geocode_region
 from pawmatch.regions import load_regions
+from pawmatch.state import PERSIST
 
 MY_LOCATION, PICK_REGION = "📍 내 위치로 찾기", "🗺️ 지역 선택"
 WHOLE_SIDO = "전체"
@@ -42,11 +43,11 @@ def pick_region(key: str) -> tuple[float, float]:
     """시/도와 시/군/구를 고르게 하고 기준 위치를 돌려줍니다."""
     regions = load_regions()
     col_sido, col_sigungu = st.columns(2)
-    sido = col_sido.selectbox("시/도", list(REGION_CENTERS), index=0, key=f"{key}_region")
+    sido = col_sido.selectbox("시/도", list(REGION_CENTERS), index=0, key=f"{key}_region", persist_state=PERSIST)
     options = [WHOLE_SIDO, *regions.get(sido, ())]
     # 시/도가 바뀌면 시/군/구 선택을 처음(전체)으로 되돌리도록 key에 시/도를 넣습니다.
     sigungu = col_sigungu.selectbox(
-        "시/군/구", options, index=0, key=f"{key}_sigungu_{sido}", disabled=len(options) == 1
+        "시/군/구", options, index=0, key=f"{key}_sigungu_{sido}", disabled=len(options) == 1, persist_state=PERSIST
     )
     st.session_state[f"{key}_area"] = (sido, sigungu if sigungu != WHOLE_SIDO else None)
 
@@ -65,7 +66,8 @@ def pick_region(key: str) -> tuple[float, float]:
 def pick_origin(key: str = "origin") -> tuple[float, float] | None:
     """사용자가 고른 방식으로 기준 위치(위도, 경도)를 정합니다. 정하지 못하면 None."""
     mode = st.radio(
-        "기준 위치", [MY_LOCATION, PICK_REGION], horizontal=True, label_visibility="collapsed", key=f"{key}_mode"
+        "기준 위치", [MY_LOCATION, PICK_REGION], horizontal=True, label_visibility="collapsed", key=f"{key}_mode",
+        persist_state=PERSIST,
     )
 
     if mode == PICK_REGION:

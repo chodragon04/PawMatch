@@ -51,14 +51,18 @@ st.write(
     "국가동물보호정보시스템의 구조동물 공공데이터를 활용합니다."
 )
 
-st.markdown(
-    """
-- **가까운 보호소 찾기** (이 화면): 내 위치나 고른 지역에서 가까운 보호소의 아이들부터 보기
-- **보호견 둘러보기**: 지역, 크기, 나이 등 조건으로 검색
-- **입양 매칭**: 간단한 설문으로 나와 잘 맞을 것 같은 아이 추천
-- **사진으로 찾기**: 강아지 사진을 올리면 생김새가 비슷한 보호견 검색
-"""
-)
+# 다른 화면으로 가는 바로가기 카드
+SHORTCUTS = [
+    ("views/browse.py", "🐶", "보호견 둘러보기", "원하는 아이가 있다면 지역, 크기, 나이, 품종 같은 조건으로 직접 찾아보세요."),
+    ("views/match.py", "🏠", "입양 매칭", "어떤 아이가 맞을지 모르겠다면 생활 환경을 알려주세요. 잘 맞는 아이와 그 이유를 알려드려요."),
+    ("views/photo_search.py", "📷", "사진으로 찾기", "강아지 사진을 올리면 생김새가 비슷한 보호견을 찾아드려요. (준비 중)"),
+]  # fmt: skip
+for col, (path, icon, title, text) in zip(st.columns(len(SHORTCUTS)), SHORTCUTS):
+    with col, st.container(border=True, height="stretch"):
+        st.markdown(f"#### {icon} {title}")
+        st.write(text)
+        st.page_link(path, label=f"{title} 바로 가기", icon=":material/arrow_forward:")
+st.caption("아래에서는 내 위치나 고른 지역에서 가까운 보호소의 아이들을 먼저 볼 수 있어요.")
 
 inject_card_css()
 st.divider()

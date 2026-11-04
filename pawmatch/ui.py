@@ -232,6 +232,27 @@ def carousel_html(dog: dict, element_id: str) -> str:
     )
 
 
+NAV_CSS = """
+<style>
+/* 화면 위 바로가기 버튼 줄: 좁은 화면에서도 한 줄로 두고, 넘치면 옆으로 밀어서 봅니다. */
+.st-key-pm_nav [data-testid="stHorizontalBlock"] { flex-wrap: nowrap !important; overflow-x: auto;
+                                                   gap: 0.4rem; scrollbar-width: none; }
+.st-key-pm_nav [data-testid="stHorizontalBlock"]::-webkit-scrollbar { display: none; }
+.st-key-pm_nav [data-testid="stColumn"] { flex: 0 0 auto !important; width: auto !important;
+                                          min-width: max-content !important; }
+.st-key-pm_nav a { border: 1px solid rgba(128, 128, 128, 0.35); border-radius: 999px; padding: 0.1rem 0.75rem; }
+</style>
+"""
+
+
+def render_nav_bar(pages: list) -> None:
+    """모든 화면 위에 보이는 바로가기 버튼 줄. 지금 화면은 강조 표시됩니다."""
+    st.html(NAV_CSS)
+    with st.container(key="pm_nav"):
+        for col, page in zip(st.columns(len(pages)), pages):
+            col.page_link(page, label=page.title, icon=page.icon)
+
+
 def inject_card_css() -> None:
     st.html(CARD_CSS)
 

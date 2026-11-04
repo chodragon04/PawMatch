@@ -9,7 +9,7 @@
 | 성격       | 20   | 특징 메모 키워드, 반려 경험·가족 구성          |
 | 돌봄 시간  | 15   | 나이, 집을 비우는 시간                         |
 | 거리       | 15   | 보호소 좌표와 기준 위치 사이 거리              |
-| 선호       | 5    | 선호 크기·나이·성별, 치료가 필요한 아이 여부   |
+| 선호       | 5    | 원하는 크기·나이(여러 개)·성별, 치료가 필요한 아이 여부 |
 
 정보가 없는 항목(성격 메모 없음, 체중 오입력, 보호소 좌표 없음)은 감점하지 않고 0.5점(중립)으로 둡니다.
 """
@@ -49,8 +49,8 @@ class Survey:
     has_pets: bool = False
     away: str = AWAY_MID
     max_km: float | None = None  # None이면 거리 제한 없음
-    pref_size: str = ANY  # traits.SMALL / MEDIUM / LARGE / ANY
-    pref_age: str = ANY  # traits.PUPPY / YOUNG / ADULT / SENIOR / ANY
+    pref_sizes: tuple[str, ...] = ()  # traits.SMALL / MEDIUM / LARGE 중 원하는 것 (비어 있으면 상관없음)
+    pref_ages: tuple[str, ...] = ()  # traits.PUPPY / YOUNG / ADULT / SENIOR 중 원하는 것
     pref_sex: str = ANY  # "M" / "F" / ANY
     health_ok: bool = False  # 치료가 필요한 아이도 괜찮은지
     breeds: tuple[str, ...] = ()  # 원하는 품종 (비어 있으면 모든 품종). 고르면 그 품종만 추천합니다.
@@ -185,10 +185,10 @@ def score_distance(distance_km: float | None, s: Survey, r: MatchResult) -> floa
 
 def score_preference(dog: dict, p: T.DogProfile, s: Survey, r: MatchResult) -> float:
     checks = []
-    if s.pref_size != ANY:
-        checks.append(p.size == s.pref_size if p.size else None)
-    if s.pref_age != ANY:
-        checks.append(p.age_group == s.pref_age if p.age_group else None)
+    if s.pref_sizes:
+        checks.append(p.size in s.pref_sizes if p.size else None)
+    if s.pref_ages:
+        checks.append(p.age_group in s.pref_ages if p.age_group else None)
     if s.pref_sex != ANY:
         sex = (dog.get("sexCd") or "").upper()
         checks.append(sex == s.pref_sex if sex in ("M", "F") else None)

@@ -63,9 +63,13 @@ def test_health_preference():
 
 
 def test_preferences_match():
-    survey = M.Survey(pref_size="small", pref_sex="F")
+    survey = M.Survey(pref_sizes=("small",), pref_sex="F")
     assert score(CALM_SMALL_ADULT, survey).parts["preference"] == 1.0
     assert score(BIG_ACTIVE_FIERCE, survey).parts["preference"] == 0.0
+    # 여러 개를 고르면 그중 하나만 맞아도 됨
+    both = M.Survey(pref_sizes=("small", "large"), pref_ages=("adult", "senior"))
+    assert score(CALM_SMALL_ADULT, both).parts["preference"] == 1.0
+    assert score(BIG_ACTIVE_FIERCE, both).parts["preference"] == 0.5  # 크기는 맞고 나이(2024년생, 1~2살)는 다름
 
 
 def test_closer_is_better():
