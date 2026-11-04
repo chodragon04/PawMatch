@@ -37,6 +37,7 @@
 ```
 PawMatch/
 ├── app.py               # Streamlit 진입점 (페이지 내비게이션)
+├── CLAUDE.md            # AI 코딩 도구(Claude Code) 작업 규칙
 ├── views/               # 화면별 페이지 (app.py의 st.navigation으로 연결)
 │   ├── home.py          # 홈
 │   ├── browse.py        # 보호견 둘러보기
