@@ -30,8 +30,9 @@
 
 배포 주소: **https://pawmatch-kr.streamlit.app** (Streamlit Community Cloud, main 브랜치가 자동 반영됨)
 
-> 앱을 한동안 아무도 쓰지 않으면 Streamlit이 앱을 재워 둡니다. 처음 열 때 "Yes, get this app back up!" 버튼이 보이면
-> 눌러서 깨워 주세요(1분 정도 걸림). 사진으로 찾기는 처음 사진을 올릴 때 분석 모델을 준비하느라 조금 더 걸립니다.
+> Streamlit은 약 12시간 동안 아무도 쓰지 않은 앱을 재워 둡니다. GitHub Actions가 3시간마다 앱을 열어 깨워 두지만
+> (`.github/workflows/keep-awake.yml`), 그래도 "Yes, get this app back up!" 버튼이 보이면 눌러서 깨워 주세요(1분 정도 걸림).
+> 사진으로 찾기는 처음 사진을 올릴 때 분석 모델을 준비하느라 조금 더 걸립니다.
 
 ### 홈: 가까운 보호소의 아이들
 고른 지역(예: 경기도 수원시) 안의 보호소를 먼저, 그다음 가까운 보호소 순으로 보호소별로 묶어 보여줍니다.
@@ -78,6 +79,7 @@
 PawMatch/
 ├── app.py               # Streamlit 진입점 (페이지 내비게이션)
 ├── CLAUDE.md            # AI 코딩 도구(Claude Code) 작업 규칙
+├── pytest.ini           # 테스트 설정 (프로젝트 루트를 모듈 경로에 추가)
 ├── views/               # 화면별 페이지 (app.py의 st.navigation으로 연결)
 │   ├── home.py          # 홈
 │   ├── browse.py        # 보호견 둘러보기
@@ -102,10 +104,12 @@ PawMatch/
 ├── scripts/
 │   ├── fetch_data.py    # 데이터 받아서 스냅샷 파일로 저장 (GitHub Actions에서 실행)
 │   ├── build_embeddings.py # 보호견 사진 임베딩 만들기 (GitHub Actions에서 실행)
-│   └── build_regions.py # 구조동물 API의 시/도·시/군/구 목록으로 regions.json 생성
+│   ├── build_regions.py # 구조동물 API의 시/도·시/군/구 목록으로 regions.json 생성
+│   └── wake_app.py      # 배포된 앱을 브라우저로 열어 깨우기 (GitHub Actions에서 실행)
 ├── .github/workflows/
 │   ├── update-data.yml  # 30분마다 데이터·사진 임베딩 갱신
-│   └── test.yml         # PR·main 반영 때마다 테스트 자동 실행
+│   ├── test.yml         # PR·main 반영 때마다 테스트 자동 실행
+│   └── keep-awake.yml   # 3시간마다 배포된 앱을 열어 잠들지 않게 함
 ├── tests/               # 단위 테스트 (pytest)
 ├── data/                # 데이터 캐시 (Git에 올리지 않음)
 ├── docs/

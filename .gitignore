@@ -22,3 +22,6 @@ Thumbs.db
 
 # Jupyter
 .ipynb_checkpoints/
+
+# 앱 깨우기 스크립트가 실패할 때 남기는 화면
+wake_app_failed.png
