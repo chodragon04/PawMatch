@@ -1,5 +1,7 @@
 # 🐾 PawMatch
 
+[![테스트](https://github.com/chodragon04/PawMatch/actions/workflows/test.yml/badge.svg)](https://github.com/chodragon04/PawMatch/actions/workflows/test.yml)
+
 **사진과 생활 환경으로 찾는 유기견 입양 매칭 웹서비스**
 
 보호소에 있는 유기견을 사진이나 생활 환경을 기준으로 찾아볼 수 있는 웹서비스입니다.
@@ -102,7 +104,8 @@ PawMatch/
 │   ├── build_embeddings.py # 보호견 사진 임베딩 만들기 (GitHub Actions에서 실행)
 │   └── build_regions.py # 구조동물 API의 시/도·시/군/구 목록으로 regions.json 생성
 ├── .github/workflows/
-│   └── update-data.yml  # 30분마다 데이터 갱신
+│   ├── update-data.yml  # 30분마다 데이터·사진 임베딩 갱신
+│   └── test.yml         # PR·main 반영 때마다 테스트 자동 실행
 ├── tests/               # 단위 테스트 (pytest)
 ├── data/                # 데이터 캐시 (Git에 올리지 않음)
 ├── docs/
@@ -164,6 +167,9 @@ PawMatch/
    pip install -r requirements-dev.txt
    pytest
    ```
+
+   테스트는 실제 API·모델 없이 가짜 응답으로 돌아가서 API 키가 필요 없습니다.
+   GitHub에서는 PR을 올리거나 main에 반영될 때마다 자동으로 돌아갑니다(`.github/workflows/test.yml`).
 
 ## 배포 (Streamlit Community Cloud)
 
