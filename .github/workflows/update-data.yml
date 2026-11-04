@@ -1,5 +1,6 @@
 # 30분마다 공공데이터 API에서 보호견·보호소 데이터를 받아 `data` 브랜치에 저장합니다.
 # 앱(pawmatch/data.py)은 이 파일을 먼저 읽어서, 첫 화면을 API 응답을 기다리지 않고 보여줍니다.
+# 이어서 '사진으로 찾기'에 쓰는 보호견 사진 임베딩(embeddings.npz)도 새로 들어온 사진만 계산해 함께 저장합니다.
 #
 # 필요한 설정: 저장소 Settings → Secrets and variables → Actions → New repository secret
 #   이름: DATA_GO_KR_API_KEY / 값: 공공데이터포털 일반 인증키(Decoding)
@@ -25,7 +26,7 @@ concurrency:
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
@@ -34,12 +35,25 @@ jobs:
           python-version: "3.12"
 
       - name: 패키지 설치
-        run: pip install requests python-dotenv
+        run: pip install requests python-dotenv "fastembed>=0.9,<1"
+
+      # CLIP 모델 파일(약 340MB)을 매번 내려받지 않도록 저장해 둡니다.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/fastembed
+          key: fastembed-clip-vit-b-32-v1
 
       - name: 데이터 받기
         env:
           DATA_GO_KR_API_KEY: ${{ secrets.DATA_GO_KR_API_KEY }}
         run: python scripts/fetch_data.py --out out
+
+      # 실패해도 데이터 스냅샷은 저장되도록 계속 진행합니다. (스크립트가 이전 임베딩이라도 남겨 둠)
+      - name: 사진 임베딩
+        continue-on-error: true
+        run: |
+          export FASTEMBED_CACHE_PATH="$HOME/.cache/fastembed"
+          python scripts/build_embeddings.py --snapshot out/snapshot.json.gz --out out --time-budget 1800
 
       - name: data 브랜치에 저장
         env:
