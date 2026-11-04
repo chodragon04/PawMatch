@@ -12,6 +12,9 @@ DOGS = [{"desertionNo": str(i), "careOwnerNm": "홍길동", "rfidCd": "410"} for
 SHELTERS = [{"careNm": "A", "lat": "37.5", "lng": "127.0"}]
 
 
+LIMIT_H = D.MAX_SNAPSHOT_AGE.total_seconds() / 3600  # 최신으로 보는 기준(시간)
+
+
 def make(age_hours, source=D.SNAPSHOT):
     return D.Dataset([{"desertionNo": "s"}], SHELTERS, NOW - timedelta(hours=age_hours), source)
 
@@ -58,13 +61,13 @@ def test_fresh_snapshot_is_used_without_calling_api(sources):
 
 
 def test_stale_snapshot_falls_back_to_api(sources):
-    sources["remote"] = make(5)
+    sources["remote"] = make(LIMIT_H + 1)
     sources["live"] = make(0, D.API)
     assert D.load_dataset("KEY", NOW).source == D.API
 
 
 def test_api_failure_uses_newest_stale_snapshot(sources):
-    sources["local"], sources["remote"] = make(10), make(5)
+    sources["local"], sources["remote"] = make(LIMIT_H + 5), make(LIMIT_H + 1)
     sources["live"] = ApiError("down")
     result = D.load_dataset("KEY", NOW)
     assert result is sources["remote"] and result.source == D.STALE_SNAPSHOT
@@ -81,3 +84,8 @@ def test_nothing_available_raises(sources):
     sources["live"] = ApiError("down")
     with pytest.raises(ApiError, match="down"):
         D.load_dataset("KEY", NOW)
+
+
+def test_snapshot_is_fresh_up_to_the_limit(sources):
+    sources["remote"] = make(LIMIT_H - 0.5)  # 예약 실행이 몇 시간 밀려도 스냅샷을 씀
+    assert D.load_dataset("KEY", NOW) is sources["remote"] and sources["live_calls"] == 0

@@ -1,4 +1,4 @@
-# 1시간마다 공공데이터 API에서 보호견·보호소 데이터를 받아 `data` 브랜치에 저장합니다.
+# 30분마다 공공데이터 API에서 보호견·보호소 데이터를 받아 `data` 브랜치에 저장합니다.
 # 앱(pawmatch/data.py)은 이 파일을 먼저 읽어서, 첫 화면을 API 응답을 기다리지 않고 보여줍니다.
 #
 # 필요한 설정: 저장소 Settings → Secrets and variables → Actions → New repository secret
@@ -10,7 +10,9 @@ name: 보호견 데이터 갱신
 
 on:
   schedule:
-    - cron: "23 * * * *" # 매시 23분 (UTC)
+    # 매시 7분, 37분 (UTC). GitHub 예약 실행은 붐비는 정각 무렵에 자주 밀리거나 빠져서 피하고,
+    # 한 번 빠져도 다음 실행이 곧 오도록 30분마다 실행합니다.
+    - cron: "7,37 * * * *"
   workflow_dispatch:
 
 permissions:
@@ -47,7 +49,7 @@ jobs:
           cat > README.md <<'EOF'
           # PawMatch 데이터 스냅샷
 
-          GitHub Actions(`.github/workflows/update-data.yml`)가 1시간마다 자동으로 갱신하는 브랜치입니다.
+          GitHub Actions(`.github/workflows/update-data.yml`)가 30분마다 자동으로 갱신하는 브랜치입니다.
           직접 수정하지 마세요.
 
           출처: 공공데이터포털(data.go.kr), 농림축산식품부 농림축산검역본부 국가동물보호정보시스템
