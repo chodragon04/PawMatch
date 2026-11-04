@@ -1,5 +1,6 @@
 import streamlit as st
 
+from pawmatch.data import STORE
 from pawmatch.display import format_updated
 from pawmatch.geo import ShelterLocator, group_by_shelter, sort_by_distance
 from pawmatch.location import pick_origin, selected_area
@@ -95,10 +96,10 @@ with st.expander("🔧 데이터 연결 상태"):
     located = sum(1 for d in dogs if locator.locate(d))
     st.write(
         {
-            "데이터 출처": {"snapshot": "저장된 스냅샷", "api": "API 직접 호출", "stale_snapshot": "오래된 스냅샷"}[
-                data.source
-            ],
+            "데이터 출처": {"snapshot": "저장된 스냅샷", "api": "API 직접 호출"}.get(data.source, data.source),
             "데이터 시각": format_updated(data.fetched_at),
+            "뒤에서 새로 받는 중": STORE.refreshing,
+            "마지막 새로 받기 오류": STORE.last_error or "없음",
             "유기견 (공고 중 + 보호 중)": len(dogs),
             "보호소": len(shelters),
             "좌표가 있는 보호소": len(locator.by_reg_no) or len(locator.by_name),
