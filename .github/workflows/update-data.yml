@@ -49,11 +49,13 @@ jobs:
         run: python scripts/fetch_data.py --out out
 
       # 실패해도 데이터 스냅샷은 저장되도록 계속 진행합니다. (스크립트가 이전 임베딩이라도 남겨 둠)
+      # GitHub 서버에서 한국 사진 서버까지 한 장 받는 데 오래 걸려서(8장씩 동시에 받을 때 초당 약 0.9장)
+      # 동시에 16장씩 받습니다.
       - name: 사진 임베딩
         continue-on-error: true
         run: |
           export FASTEMBED_CACHE_PATH="$HOME/.cache/fastembed"
-          python scripts/build_embeddings.py --snapshot out/snapshot.json.gz --out out --time-budget 1800
+          python scripts/build_embeddings.py --snapshot out/snapshot.json.gz --out out --time-budget 1800 --workers 16
 
       - name: data 브랜치에 저장
         env:
