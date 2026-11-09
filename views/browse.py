@@ -130,11 +130,10 @@ def filter_controls(dogs: list[dict]) -> B.BrowseFilter:
 
 
 page_header("보호견 둘러보기")
-st.write("원하는 아이가 있다면 지역, 크기, 나이 같은 조건으로 직접 찾아보세요.")
 
 inject_card_css()
 data = load_data_or_stop()
-st.caption(f"국가동물보호정보시스템 {format_updated(data.fetched_at)} · 공고 중 + 보호 중 {len(data.dogs):,}마리")
+st.caption(f"전체 {len(data.dogs):,}마리 · {format_updated(data.fetched_at)}")
 
 conditions = filter_controls(data.dogs)
 found = B.filter_dogs(data.dogs, conditions)
@@ -147,19 +146,17 @@ if st.session_state.get(f"{KEY}order") not in sort_options:
 
 with st.container(border=True):
     if survey is None:
-        st.markdown(
-            "🏠 **내 생활 환경에 맞는 아이**가 궁금하다면 입양 매칭 설문을 해 보세요. "
-            "고른 조건(지역·크기·나이·성별·품종)을 가져가고, 설문 답변으로 여기서도 **나와 잘 맞는 순** 정렬과 "
-            "적합도를 볼 수 있어요."
-        )
+        st.markdown("설문에 답하면 **나와 잘 맞는 순**으로도 볼 수 있어요.")
     else:
         sorted_by_fit = st.session_state.get(f"{KEY}order") == B.FIT
         st.markdown(
-            "🏠 입양 매칭 설문 답변으로 **적합도**를 계산했어요. "
-            + ("**나와 잘 맞는 순**으로 정렬했어요. " if sorted_by_fit else "정렬을 **나와 잘 맞는 순**으로 바꿔 보세요. ")
-            + "(여기서는 지역을 조건으로 고르므로 거리는 점수에 넣지 않아요)"
+            "설문 답변으로 **적합도**를 계산했어요."
+            + ("" if sorted_by_fit else " 정렬을 **나와 잘 맞는 순**으로 바꿔 보세요.")
         )
-    if st.button("이 조건으로 입양 매칭 하기", icon="🏠"):
+    if st.button(
+        "이 조건으로 입양 매칭 하기", icon=":material/volunteer_activism:",
+        help="고른 조건(지역·크기·나이·성별·품종)을 입양 매칭으로 가져가요. 여기서는 거리를 점수에 넣지 않아요.",
+    ):  # fmt: skip
         carry_to_match(conditions)
         st.switch_page("views/match.py")
 

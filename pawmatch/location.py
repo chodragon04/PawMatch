@@ -13,7 +13,7 @@ from pawmatch.kakao import geocode_region
 from pawmatch.regions import load_regions
 from pawmatch.state import PERSIST
 
-MY_LOCATION, PICK_REGION = "📍 내 위치로 찾기", "🗺️ 지역 선택"
+MY_LOCATION, PICK_REGION = ":material/my_location: 내 위치로 찾기", ":material/map: 지역 선택"
 WHOLE_SIDO = "전체"
 
 # 브라우저에서 받은 내 위치를 이 시간 동안 기억해, 화면을 옮기거나 다시 그릴 때마다 위치 권한을 다시 묻지 않습니다.
@@ -83,12 +83,12 @@ def pick_region(key: str) -> tuple[float, float]:
     if sigungu != WHOLE_SIDO:
         pos = locate_sigungu(sido, sigungu)
         if pos is not None:
-            st.caption(f"{sido} {sigungu} 위치를 기준으로 거리를 계산합니다.")
+            st.caption(f"{sido} {sigungu} 기준으로 거리를 재요.")
             return pos
-        st.caption(f"{sigungu} 위치를 찾지 못해 {sido} 시청/도청 위치를 기준으로 거리를 계산합니다.")
+        st.caption(f"{sigungu} 위치를 몰라서 {sido} 시청·도청 기준으로 거리를 재요.")
         return REGION_CENTERS[sido]
 
-    st.caption(f"{sido} 시청/도청 위치를 기준으로 거리를 계산합니다.")
+    st.caption(f"{sido} 시청·도청 기준으로 거리를 재요.")
     return REGION_CENTERS[sido]
 
 
@@ -109,22 +109,22 @@ def pick_origin(key: str = "origin") -> tuple[float, float] | None:
         minutes = int(age // 60)
         when = "방금" if minutes < 1 else f"{minutes}분 전에"
         col_text, col_button = st.columns([3, 1], vertical_alignment="center")
-        col_text.caption(
-            f"{when} 받은 내 위치를 쓰고 있어요. 30분 동안은 위치 권한을 다시 묻지 않아요. "
-            "위치는 가까운 보호소를 찾는 데에만 쓰고 서버에 저장하지 않아요."
-        )
-        col_button.button("위치 다시 가져오기", key=f"{key}_relocate", on_click=forget_location, width="stretch")
+        col_text.caption(f"{when} 받은 내 위치예요. (저장하지 않아요)")
+        col_button.button(
+            "다시 가져오기", key=f"{key}_relocate", on_click=forget_location, width="stretch",
+            help="위치는 30분 동안 기억해서 권한을 다시 묻지 않아요.",
+        )  # fmt: skip
         return lat, lng
 
-    st.caption("위치는 가까운 보호소를 찾는 데에만 쓰고 서버에 저장하지 않아요. 한 번 받으면 30분 동안은 다시 묻지 않아요.")
+    st.caption("위치는 가까운 보호소를 찾는 데만 쓰고 저장하지 않아요.")
     request_no = st.session_state.get(_REQUEST_NO_KEY, 0)
     loc = get_geolocation(component_key=f"my_geolocation_{request_no}")
     if loc is None:
-        st.info("브라우저에서 위치 권한을 허용해 주세요. 허용하지 않으려면 '지역 선택'을 이용하세요.")
+        st.info("위치 권한을 허용하거나 '지역 선택'을 눌러 주세요.")
         return None
     if "error" in loc:
         message = (loc.get("error") or {}).get("message", "")
-        st.warning(f"위치를 가져오지 못했습니다. '지역 선택'을 이용해 주세요. ({message})")
+        st.warning(f"위치를 가져오지 못했어요. '지역 선택'을 이용해 주세요. ({message})")
         return None
     coords = loc.get("coords") or {}
     if coords.get("latitude") is None or coords.get("longitude") is None:

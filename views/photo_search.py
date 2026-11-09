@@ -4,7 +4,7 @@ import streamlit as st
 
 from pawmatch import state as S
 from pawmatch.detail import render_dog_cards
-from pawmatch.display import format_updated, score_badge
+from pawmatch.display import score_badge
 from pawmatch.geo import REGION_CENTERS, ShelterLocator, address_in_area
 from pawmatch.image_search import ClipEmbedder, PhotoIndex, load_image, read_local_index, read_remote_index
 from pawmatch.ui import inject_card_css, load_data_or_stop, page_header
@@ -53,11 +53,8 @@ def embed_photo(data: bytes):
 
 
 page_header("사진으로 찾기")
-st.write(
-    "강아지 사진을 올리면, 지금 보호소에 있는 아이들 중 **생김새가 비슷한 아이**를 찾아드려요. "
-    "잃어버린 반려견을 찾을 때나, 마음에 드는 생김새의 아이를 찾을 때 써 보세요."
-)
-st.caption("올린 사진은 비슷한 아이를 찾는 데에만 쓰고 저장하지 않아요.")
+st.write("사진 속 강아지와 **닮은 보호견**을 찾아드려요.")
+st.caption("올린 사진은 저장하지 않아요.")
 
 inject_card_css()
 data = load_data_or_stop()
@@ -67,7 +64,7 @@ if index is None or not len(index):
     st.stop()
 
 with st.container(border=True):
-    upload_tab, camera_tab = st.tabs(["🖼️ 사진 올리기", "📸 카메라로 찍기"])
+    upload_tab, camera_tab = st.tabs([":material/image: 사진 올리기", ":material/photo_camera: 카메라로 찍기"])
     uploaded = upload_tab.file_uploader(
         "강아지 사진", type=UPLOAD_TYPES, key="photo_upload", label_visibility="collapsed",
         help="강아지 얼굴과 몸이 잘 보이는 사진일수록 잘 찾아요.",
@@ -78,8 +75,10 @@ with st.container(border=True):
             taken = st.camera_input("강아지를 찍어 주세요", key="photo_camera")
             st.button("카메라 끄기", on_click=turn_camera_off, type="tertiary", icon=":material/videocam_off:")
         else:
-            st.caption("카메라는 아래 버튼을 눌렀을 때만 켜요. 한 번 켜면 30분 동안은 이 화면에 다시 와도 바로 켜져요.")
-            st.button("카메라 켜기", on_click=turn_camera_on, icon=":material/photo_camera:")
+            st.button(
+                "카메라 켜기", on_click=turn_camera_on, icon=":material/photo_camera:",
+                help="한 번 켜면 30분 동안은 이 화면에 다시 와도 바로 켜져요.",
+            )  # fmt: skip
     sido = st.selectbox(
         "어디에서 찾을까요?", [WHOLE_COUNTRY, *REGION_CENTERS], key="photo_sido", persist_state=S.PERSIST,
         help="보호소 주소 기준이에요.",
@@ -87,7 +86,6 @@ with st.container(border=True):
 
 photo = uploaded or taken
 if photo is None:
-    st.caption("사진을 올리거나 찍으면 바로 찾기 시작해요.")
     st.stop()
 
 try:
@@ -110,14 +108,14 @@ preview.image(photo, caption="올린 사진", width="stretch")
 with summary:
     where = "전국" if sido == WHOLE_COUNTRY else sido
     st.subheader(f"생김새가 비슷한 아이 {len(results)}마리")
+    pending = len(allowed) - len(searchable)
     st.caption(
-        f"{where}에서 사진 분석이 끝난 {len(searchable):,}마리 중에서 찾았어요. "
-        f"(사진 분석 {format_updated(index.created_at)}"
-        + (f", 아직 분석 전인 {len(allowed) - len(searchable):,}마리 제외)" if len(allowed) > len(searchable) else ")")
+        f"{where} {len(searchable):,}마리 중에서 찾았어요"
+        + (f" (사진 분석 전 {pending:,}마리 제외)" if pending > 0 else "")
     )
     if results and results[0][1] < LOW_SIMILARITY:
         st.warning("많이 닮은 아이를 찾지 못했어요. 강아지가 크게 잘 보이는 사진으로 다시 시도해 보세요.")
-    st.caption("닮은 정도는 사진 속 생김새(털색, 얼굴, 몸집 등)가 얼마나 비슷한지예요. 배경이나 찍은 각도도 영향을 줄 수 있어요.")
+    st.caption("닮은 정도는 털색·얼굴·몸집을 비교한 거예요. 배경과 각도도 영향을 줘요.")
 
 if not results:
     st.info("조건에 맞는 아이가 없어요. 지역을 넓혀 보세요.")

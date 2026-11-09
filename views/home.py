@@ -106,9 +106,9 @@ if origin is not None:
     if area:
         name = area[1] or area[0]
         if any(g["in_area"] for g in groups):
-            st.caption(f"{name} 안에 있는 보호소를 먼저 보여드리고, 그다음 가까운 보호소 순으로 보여드려요.")
+            st.caption(f"{name} 보호소 먼저, 그다음 가까운 순이에요.")
         else:
-            st.caption(f"{name} 안에는 지금 보호 중인 아이가 있는 보호소가 없어 가까운 보호소 순으로 보여드려요.")
+            st.caption(f"{name}에는 보호 중인 아이가 없어서 가까운 순으로 보여드려요.")
     render_shelter_groups(groups, area)
 else:
     st.caption("최근 등록된 아이들")
