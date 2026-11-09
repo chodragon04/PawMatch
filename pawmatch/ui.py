@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import html
 import json
+from urllib.parse import urlparse
 
 import streamlit as st
 
@@ -228,11 +229,32 @@ NAV_ACTIVE_CSS = """
 </style>
 """
 
+# Streamlit Community Cloud는 공개 앱 화면 오른쪽 아래에 만든 사람 사진과 배지(약 115x46px)를 띄웁니다.
+# 앱 바깥(부모 화면)에 있어서 숨길 수 없으므로, 좁은 화면에서는 탭을 왼쪽으로 모아 배지 자리를 비워 둡니다.
+# (넓은 화면에서는 탭이 가운데에 모여 있어 겹치지 않음)
+NAV_CLOUD_BADGE_CSS = """
+<style>
+@media (max-width: 800px) {
+  .st-key-pm_nav { padding-right: 120px !important; }
+  .st-key-pm_nav [data-testid="stHorizontalBlock"] { margin: 0 !important; }
+}
+</style>
+"""
+CLOUD_HOST_SUFFIX = ".streamlit.app"
+
+
+def shows_cloud_badge(url: str | None, embedded: bool = False) -> bool:
+    """Streamlit Community Cloud 배지가 보이는 주소인지. (?embed=true로 넣은 화면에는 배지가 없음)"""
+    host = urlparse(url or "").hostname or ""
+    return host.endswith(CLOUD_HOST_SUFFIX) and not embedded
+
+
 def render_nav_bar(pages: list, current, short_titles: dict[str, str] | None = None) -> None:
     """화면 맨 아래 고정 아이콘 탭. current(지금 화면)는 주황색으로 표시합니다."""
     short_titles = short_titles or {}
     active = next((i for i, page in enumerate(pages) if page.url_path == current.url_path), -1)
-    st.html(NAV_CSS + NAV_ACTIVE_CSS % {"i": active})
+    badge = shows_cloud_badge(st.context.url, st.context.is_embedded)
+    st.html(NAV_CSS + NAV_ACTIVE_CSS % {"i": active} + (NAV_CLOUD_BADGE_CSS if badge else ""))
     with st.container(key="pm_nav"):
         for i, (col, page) in enumerate(zip(st.columns(len(pages)), pages)):
             with col, st.container(key=f"pm_nav_{i}"):
