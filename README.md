@@ -71,6 +71,7 @@
 - **데이터**: 공공데이터포털 국가동물보호정보시스템 구조동물 조회 서비스
 - **이미지 검색**: 사전학습 이미지 모델 CLIP ViT-B/32 (ONNX), [fastembed](https://github.com/qdrant/fastembed) + onnxruntime (PyTorch 없이 CPU로 실행)
 - **데이터 갱신**: GitHub Actions (30분마다 실행, `data` 브랜치에 스냅샷 저장)
+- **디자인**: 흰 배경 + 주황 포인트(`#FF8A3D`) 테마(`.streamlit/config.toml`), 휴대폰이 다크 모드여도 밝은 화면 유지. 글꼴 Jua(제목)·Gowun Dodum(본문)
 - **배포**: [Streamlit Community Cloud](https://streamlit.io/cloud) (GitHub 푸시 시 자동 반영)
 
 ## 프로젝트 구조
@@ -79,6 +80,7 @@
 PawMatch/
 ├── app.py               # Streamlit 진입점 (페이지 내비게이션)
 ├── CLAUDE.md            # AI 코딩 도구(Claude Code) 작업 규칙
+├── .streamlit/config.toml # 화면 테마 (색·글꼴·모서리)
 ├── pytest.ini           # 테스트 설정 (프로젝트 루트를 모듈 경로에 추가)
 ├── views/               # 화면별 페이지 (app.py의 st.navigation으로 연결)
 │   ├── home.py          # 홈
@@ -274,6 +276,7 @@ GitHub Actions (매시 7분·37분)        Streamlit 앱
   Radford et al., "Learning Transferable Visual Models From Natural Language Supervision", 2021
 - [Qdrant/clip-ViT-B-32-vision](https://huggingface.co/Qdrant/clip-ViT-B-32-vision) (MIT License): CLIP 이미지 인코더를 ONNX로 변환한 모델 파일
 - [fastembed](https://github.com/qdrant/fastembed) (Apache License 2.0), [ONNX Runtime](https://github.com/microsoft/onnxruntime) (MIT License): 모델 실행
+- 글꼴 [Jua](https://fonts.google.com/specimen/Jua) (Woowahan Brothers), [Gowun Dodum](https://fonts.google.com/specimen/Gowun+Dodum) (Yanghee Ryu): Google Fonts, SIL Open Font License 1.1
 - 본 프로젝트는 AI 코딩 도구(Anthropic Claude)의 도움을 받아 개발했습니다.
 
 ## 라이선스

@@ -7,6 +7,7 @@ from pawmatch import matching as M
 from pawmatch import state as S
 from pawmatch import traits as T
 from pawmatch.detail import detail_button
+from pawmatch.display import score_badge
 from pawmatch.geo import ShelterLocator, sort_by_distance
 from pawmatch.location import pick_origin
 from pawmatch.ui import inject_card_css, load_data_or_stop, render_card
@@ -84,7 +85,7 @@ def survey_form(max_km: float | None, breeds: list[tuple[str, int]]) -> M.Survey
 def render_result(result: M.MatchResult, index: int, locator: ShelterLocator) -> None:
     with st.container(border=True):
         render_card(result.dog, distance_km=result.distance_km, key_prefix=f"match{index}")
-        st.markdown(f":violet-badge[적합도 {result.score}점]")
+        st.markdown(score_badge(f"적합도 {result.score}점"))
         lines = [f"👍 {r}" for r in result.reasons[:MAX_REASONS]]
         lines += [f"⚠️ {c}" for c in result.cautions[:MAX_CAUTIONS]]
         if lines:

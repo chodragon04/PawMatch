@@ -6,7 +6,7 @@ from pawmatch import browse as B
 from pawmatch import state as S
 from pawmatch import traits as T
 from pawmatch.detail import render_dog_cards
-from pawmatch.display import format_updated
+from pawmatch.display import format_updated, score_badge
 from pawmatch.geo import REGION_CENTERS, ShelterLocator
 from pawmatch.location import PICK_REGION
 from pawmatch.matching import ANY, breed_options
@@ -179,7 +179,7 @@ fits = B.fit_results(found, survey) if survey is not None else {}
 
 def fit_badge(dog: dict) -> str | None:
     result = fits.get(str(dog.get("desertionNo")))
-    return f":violet-badge[적합도 {result.score}점]" if result else None
+    return score_badge(f"적합도 {result.score}점") if result else None
 
 
 def fit_detail(dog: dict) -> dict:

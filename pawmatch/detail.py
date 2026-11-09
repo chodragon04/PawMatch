@@ -8,7 +8,7 @@ from urllib.parse import quote
 
 import streamlit as st
 
-from pawmatch.display import adoption_status, dog_facts, format_shelter_hours
+from pawmatch.display import adoption_status, dog_facts, format_shelter_hours, score_badge, status_badge
 from pawmatch.geo import ShelterLocator
 from pawmatch.ui import carousel_html, render_card
 
@@ -65,9 +65,9 @@ def render_dog_detail(
         st.html(carousel_html(dog, f"detail-{dog.get('desertionNo') or id(dog)}"), unsafe_allow_javascript=True)
     with right:
         status = adoption_status(dog.get("noticeEdt"))
-        badges = [f":{'green' if status == '입양 가능' else 'orange'}-badge[{status}]"]
+        badges = [status_badge(status)]
         if score is not None:
-            badges.insert(0, f":violet-badge[적합도 {score}점]")
+            badges.insert(0, score_badge(f"적합도 {score}점"))
         st.markdown(" ".join(badges))
         st.markdown("\n".join(f"- **{label}** {value}" for label, value in dog_facts(dog)))
         render_shelter_popover(shelter_contact(dog, shelter), distance_km)

@@ -53,6 +53,16 @@ def adoption_status(notice_end: str | None, today: date | None = None) -> str:
 KST = timezone(timedelta(hours=9))
 
 
+def status_badge(status: str) -> str:
+    """공고 상태 배지(마크다운). 입양 가능은 초록, 공고 중·보호 중은 회색으로 차분하게 둡니다."""
+    return f":{'green' if status == '입양 가능' else 'gray'}-badge[{status}]"
+
+
+def score_badge(text: str) -> str:
+    """적합도·닮은 정도 같은 PawMatch 점수 배지(마크다운). 테마 포인트 색(주황)을 씁니다."""
+    return f":primary-badge[{text}]"
+
+
 def format_updated(fetched_at: datetime) -> str:
     """데이터를 받은 시각을 한국 시간으로: '11월 3일 14:23 기준'."""
     t = fetched_at.astimezone(KST)
