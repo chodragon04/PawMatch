@@ -200,23 +200,48 @@ def carousel_html(dog: dict, element_id: str) -> str:
 
 NAV_CSS = """
 <style>
-/* 화면 위 바로가기 버튼 줄: 좁은 화면에서도 한 줄로 두고, 넘치면 옆으로 밀어서 봅니다. */
-.st-key-pm_nav [data-testid="stHorizontalBlock"] { flex-wrap: nowrap !important; overflow-x: auto;
-                                                   gap: 0.4rem; scrollbar-width: none; }
-.st-key-pm_nav [data-testid="stHorizontalBlock"]::-webkit-scrollbar { display: none; }
-.st-key-pm_nav [data-testid="stColumn"] { flex: 0 0 auto !important; width: auto !important;
-                                          min-width: max-content !important; }
-.st-key-pm_nav a { border: 1px solid rgba(128, 128, 128, 0.35); border-radius: 999px; padding: 0.1rem 0.75rem; }
+/* 화면 맨 아래에 고정된 아이콘 탭. 지금 화면은 주황색으로 표시합니다. */
+.st-key-pm_nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 999990; background: #FFFFFF;
+                 border-top: 1px solid #F3DCCB; box-shadow: 0 -2px 12px rgba(255, 138, 61, 0.10);
+                 padding: 0.25rem 0.5rem calc(0.25rem + env(safe-area-inset-bottom)); }
+.st-key-pm_nav [data-testid="stHorizontalBlock"] { flex-wrap: nowrap !important; gap: 0 !important;
+                                                   max-width: 560px; margin: 0 auto; }
+.st-key-pm_nav [data-testid="stColumn"] { flex: 1 1 0 !important; min-width: 0 !important; width: auto !important; }
+.st-key-pm_nav [data-testid="stPageLink"], .st-key-pm_nav [data-testid="stElementContainer"] { width: 100% !important; }
+.st-key-pm_nav a[data-testid="stPageLink-NavLink"] { flex-direction: column; justify-content: center; align-items: center;
+                                                    gap: 0.1rem; padding: 0.35rem 0; border-radius: 0.8rem;
+                                                    background: transparent !important; color: #9C8B82; height: auto !important; }
+.st-key-pm_nav a[data-testid="stPageLink-NavLink"] > span:first-child { height: auto !important; width: auto !important; margin: 0 !important; }
+.st-key-pm_nav [data-testid="stVerticalBlock"], .st-key-pm_nav [data-testid="stHorizontalBlock"] { flex: 0 0 auto !important; }
+.st-key-pm_nav a[data-testid="stPageLink-NavLink"] span[data-testid="stIconMaterial"] { font-size: 1.6rem; width: 1.6rem !important; height: 1.6rem !important; line-height: 1; color: #B9A79D; }
+.st-key-pm_nav a[data-testid="stPageLink-NavLink"] p { font-size: 0.7rem; line-height: 1; color: #9C8B82; margin: 0; }
+/* 위쪽 메뉴 줄이 없어졌으니 위 여백을 줄이고, 내용이 하단 탭에 가려지지 않게 아래 여백을 둡니다. */
+[data-testid="stMainBlockContainer"] { padding-top: 3.5rem !important; padding-bottom: 6rem !important; }
 </style>
 """
 
+# 지금 화면의 탭 (key가 pm_nav_<번호>인 칸)
+NAV_ACTIVE_CSS = """
+<style>
+.st-key-pm_nav_%(i)d a[data-testid="stPageLink-NavLink"] span[data-testid="stIconMaterial"],
+.st-key-pm_nav_%(i)d a[data-testid="stPageLink-NavLink"] p { color: #FF8A3D !important; font-weight: 700; }
+</style>
+"""
 
-def render_nav_bar(pages: list) -> None:
-    """모든 화면 위에 보이는 바로가기 버튼 줄. 지금 화면은 강조 표시됩니다."""
-    st.html(NAV_CSS)
+def render_nav_bar(pages: list, current, short_titles: dict[str, str] | None = None) -> None:
+    """화면 맨 아래 고정 아이콘 탭. current(지금 화면)는 주황색으로 표시합니다."""
+    short_titles = short_titles or {}
+    active = next((i for i, page in enumerate(pages) if page.url_path == current.url_path), -1)
+    st.html(NAV_CSS + NAV_ACTIVE_CSS % {"i": active})
     with st.container(key="pm_nav"):
-        for col, page in zip(st.columns(len(pages)), pages):
-            col.page_link(page, label=page.title, icon=page.icon)
+        for i, (col, page) in enumerate(zip(st.columns(len(pages)), pages)):
+            with col, st.container(key=f"pm_nav_{i}"):
+                st.page_link(page, label=short_titles.get(page.title, page.title), icon=page.icon)
+
+
+def page_header(title: str) -> None:
+    """각 화면 맨 위의 화면 이름 (굵게, 짧게)."""
+    st.markdown(f"## {title}")
 
 
 def inject_card_css() -> None:

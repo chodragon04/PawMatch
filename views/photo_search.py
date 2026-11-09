@@ -7,7 +7,7 @@ from pawmatch.detail import render_dog_cards
 from pawmatch.display import format_updated, score_badge
 from pawmatch.geo import REGION_CENTERS, ShelterLocator, address_in_area
 from pawmatch.image_search import ClipEmbedder, PhotoIndex, load_image, read_local_index, read_remote_index
-from pawmatch.ui import inject_card_css, load_data_or_stop
+from pawmatch.ui import inject_card_css, load_data_or_stop, page_header
 
 TOP_K = 24
 COLUMNS = 4
@@ -52,7 +52,7 @@ def embed_photo(data: bytes):
     return get_embedder()([load_image(data)])[0]
 
 
-st.title("📷 사진으로 찾기")
+page_header("사진으로 찾기")
 st.write(
     "강아지 사진을 올리면, 지금 보호소에 있는 아이들 중 **생김새가 비슷한 아이**를 찾아드려요. "
     "잃어버린 반려견을 찾을 때나, 마음에 드는 생김새의 아이를 찾을 때 써 보세요."
