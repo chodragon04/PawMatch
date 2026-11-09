@@ -1,6 +1,6 @@
 """pawmatch.ui 단위 테스트 (사진 주소 처리, HTML 생성)."""
 
-from pawmatch.ui import PHOTO_FAIL_TITLE, photo_html, photo_urls
+from pawmatch.ui import PHOTO_FAIL_TITLE, photo_html, photo_urls, shows_cloud_badge
 
 
 def test_animal_go_kr_photos_use_https():
@@ -40,3 +40,12 @@ def test_photo_html_escapes_values():
     assert "&lt;b&gt;&quot;믹스&quot;&lt;/b&gt;" in out
     assert 'data-srcs="[&quot;https://img/a.jpg' in out
     assert '"pm-photo-1"' in out  # 스크립트에서 찾을 id
+
+
+def test_shows_cloud_badge_only_on_streamlit_cloud():
+    assert shows_cloud_badge("https://pawmatch-kr.streamlit.app/browse")
+    assert shows_cloud_badge("https://pawmatch-kr.streamlit.app/~/+/match")
+    assert not shows_cloud_badge("https://pawmatch-kr.streamlit.app/", embedded=True)
+    assert not shows_cloud_badge("http://localhost:8501/")
+    assert not shows_cloud_badge("https://streamlit.app.example.com/")
+    assert not shows_cloud_badge(None)

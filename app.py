@@ -10,9 +10,32 @@
 위쪽 버튼 줄은 휴대폰에서 칸 안에서 옆으로 밀려 보였습니다)
 """
 
+import sys
+from pathlib import Path
+
 import streamlit as st
 
-from pawmatch.ui import render_nav_bar
+
+def drop_stale_modules(package: str = "pawmatch") -> None:
+    """서버가 켜진 채로 코드가 바뀌었으면(배포 갱신) 이미 불러온 pawmatch 모듈을 버려서 새 코드로 다시 불러오게 합니다.
+
+    Streamlit은 app.py와 화면 파일은 매번 새로 읽지만, import한 모듈은 접속 중인 사람이 없을 때 파일이 바뀌면
+    예전 코드를 그대로 씁니다. 그러면 새 app.py가 예전 함수를 불러서 TypeError가 납니다. (Streamlit Cloud에서 실제로 발생)
+    """
+    loaded = sys.modules.get(package)
+    if loaded is None:
+        return
+    folder = Path(__file__).resolve().parent / package
+    newest = max((p.stat().st_mtime for p in folder.iterdir() if p.is_file()), default=0.0)
+    loaded_at = getattr(loaded, "LOADED_AT", None)
+    if loaded_at is None or newest > loaded_at:
+        for name in [n for n in sys.modules if n == package or n.startswith(package + ".")]:
+            del sys.modules[name]
+
+
+drop_stale_modules()
+
+from pawmatch.ui import render_nav_bar  # drop_stale_modules() 뒤에 불러와야 합니다
 
 st.set_page_config(page_title="PawMatch", page_icon="🐾", layout="wide")
 
