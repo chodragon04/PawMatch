@@ -10,7 +10,7 @@ from pawmatch.detail import detail_button
 from pawmatch.display import score_badge
 from pawmatch.geo import ShelterLocator, sort_by_distance
 from pawmatch.location import pick_origin
-from pawmatch.ui import inject_card_css, load_data_or_stop, render_card
+from pawmatch.ui import inject_card_css, load_data_or_stop, page_header, render_card
 
 PAGE_SIZE = 12  # 한 번에 보여줄 추천 수
 MAX_RESULTS = 60  # '더 보기'로 볼 수 있는 최대 추천 수
@@ -100,7 +100,7 @@ def show_more() -> None:
     st.session_state.match_limit = st.session_state.get("match_limit", PAGE_SIZE) + PAGE_SIZE
 
 
-st.title("🏠 입양 매칭")
+page_header("입양 매칭")
 st.write(
     "어떤 아이가 나에게 맞을지 모르겠다면, **내 생활 환경**을 알려주세요. 집 크기, 산책 시간, 반려 경험, 가족, "
     "집을 비우는 시간으로 잘 맞을 것 같은 아이와 **그 이유**, **미리 알아두면 좋은 점**을 알려드려요. "

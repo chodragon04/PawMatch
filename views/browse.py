@@ -11,7 +11,7 @@ from pawmatch.geo import REGION_CENTERS, ShelterLocator
 from pawmatch.location import PICK_REGION
 from pawmatch.matching import ANY, breed_options
 from pawmatch.regions import load_regions
-from pawmatch.ui import inject_card_css, load_data_or_stop
+from pawmatch.ui import inject_card_css, load_data_or_stop, page_header
 
 PAGE_SIZE = 24  # 한 번에 보여줄 아이 수
 COLUMNS = 4
@@ -129,7 +129,7 @@ def filter_controls(dogs: list[dict]) -> B.BrowseFilter:
     )
 
 
-st.title("🐶 보호견 둘러보기")
+page_header("보호견 둘러보기")
 st.write("원하는 아이가 있다면 지역, 크기, 나이 같은 조건으로 직접 찾아보세요.")
 
 inject_card_css()
