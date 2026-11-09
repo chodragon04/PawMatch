@@ -63,3 +63,11 @@ def test_format_updated_uses_korea_time():
     from pawmatch.display import format_updated
 
     assert format_updated(datetime(2026, 11, 3, 5, 7, tzinfo=timezone.utc)) == "11월 3일 14:07 기준"
+
+
+def test_badges():
+    from pawmatch.display import score_badge, status_badge
+
+    assert status_badge("입양 가능") == ":green-badge[입양 가능]"
+    assert status_badge("공고 중 · 11/12까지") == ":gray-badge[공고 중 · 11/12까지]"
+    assert score_badge("적합도 90점") == ":primary-badge[적합도 90점]"

@@ -4,7 +4,7 @@ import streamlit as st
 
 from pawmatch import state as S
 from pawmatch.detail import render_dog_cards
-from pawmatch.display import format_updated
+from pawmatch.display import format_updated, score_badge
 from pawmatch.geo import REGION_CENTERS, ShelterLocator, address_in_area
 from pawmatch.image_search import ClipEmbedder, PhotoIndex, load_image, read_local_index, read_remote_index
 from pawmatch.ui import inject_card_css, load_data_or_stop
@@ -128,5 +128,5 @@ scores = {dog_id: score for dog_id, score, _ in results}
 cards = [{**by_id[dog_id], "popfile0": url} for dog_id, _, url in results]
 render_dog_cards(
     cards, ShelterLocator(data.shelters), columns=COLUMNS, key_prefix="p",
-    badge=lambda dog: f":blue-badge[닮은 정도 {round(scores[str(dog.get('desertionNo'))] * 100)}%]",
+    badge=lambda dog: score_badge(f"닮은 정도 {round(scores[str(dog.get('desertionNo'))] * 100)}%"),
 )  # fmt: skip

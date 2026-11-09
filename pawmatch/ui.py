@@ -10,7 +10,7 @@ import streamlit as st
 from pawmatch.api import ApiError
 from pawmatch.config import get_api_key
 from pawmatch.data import STORE, WARN_AFTER, Dataset
-from pawmatch.display import adoption_status, format_age, format_sex, format_updated, photo_urls
+from pawmatch.display import adoption_status, format_age, format_sex, format_updated, photo_urls, status_badge
 
 PHOTO_FAIL_TITLE = "사진을 불러오지 못했어요"
 PHOTO_FAIL_DETAIL = "보호소에 문의하면 아이의 모습을 확인할 수 있어요"
@@ -19,7 +19,7 @@ PHOTO_FAIL_DETAIL = "보호소에 문의하면 아이의 모습을 확인할 수
 CARD_CSS = """
 <style>
 .pm-photo { position: relative; width: 100%; aspect-ratio: 4 / 3; border-radius: 0.5rem;
-            overflow: hidden; background: rgba(128, 128, 128, 0.12); }
+            overflow: hidden; background: #FFF4EC; }
 .pm-photo img { width: 100%; height: 100%; object-fit: contain; display: block; }
 .pm-photo .pm-fail { display: none; position: absolute; inset: 0; flex-direction: column;
                      align-items: center; justify-content: center; text-align: center;
@@ -93,7 +93,7 @@ CAROUSEL_CSS = """
 <style>
 .pm-carousel { position: relative; width: 100%; }
 .pm-carousel .pm-stage { position: relative; width: 100%; height: min(62vh, 520px); border-radius: 0.5rem;
-                         overflow: hidden; background: rgba(128, 128, 128, 0.12); touch-action: pan-y; }
+                         overflow: hidden; background: #FFF4EC; touch-action: pan-y; }
 .pm-carousel .pm-slide { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain;
                          display: none; }
 .pm-carousel .pm-slide.pm-on { display: block; }
@@ -108,7 +108,7 @@ CAROUSEL_CSS = """
 .pm-carousel .pm-thumbs { display: flex; gap: 0.4rem; margin-top: 0.5rem; overflow-x: auto; }
 .pm-carousel .pm-thumb { flex: 0 0 auto; width: 4rem; height: 3rem; object-fit: cover; border-radius: 0.3rem;
                          cursor: pointer; opacity: 0.55; border: 2px solid transparent; }
-.pm-carousel .pm-thumb.pm-on { opacity: 1; border-color: #7c5cff; }
+.pm-carousel .pm-thumb.pm-on { opacity: 1; border-color: #FF8A3D; }
 .pm-carousel.pm-single .pm-nav, .pm-carousel.pm-single .pm-count,
 .pm-carousel.pm-single .pm-thumbs { display: none; }
 .pm-carousel .pm-fail { display: none; position: absolute; inset: 0; flex-direction: column; align-items: center;
@@ -234,9 +234,7 @@ def render_card(
         shelter = dog.get("careNm", "")
         lines.append(f"{shelter} · {distance_km:.1f}km" if distance_km is not None else shelter)
     st.caption("\n\n".join(lines))
-    status = adoption_status(dog.get("noticeEdt"))
-    color = "green" if status == "입양 가능" else "orange"
-    st.markdown(f":{color}-badge[{status}]")
+    st.markdown(status_badge(adoption_status(dog.get("noticeEdt"))))
 
 
 def render_grid(dogs: list[dict], columns: int = 4, **card_kwargs) -> None:
