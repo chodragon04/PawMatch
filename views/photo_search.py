@@ -1,3 +1,5 @@
+import time
+
 import streamlit as st
 
 from pawmatch import state as S
@@ -12,6 +14,24 @@ COLUMNS = 4
 WHOLE_COUNTRY = "전국"
 LOW_SIMILARITY = 0.7  # 가장 닮은 아이도 이보다 낮으면 안내 (강아지가 아닌 사진은 실측 0.55~0.60, 다른 강아지끼리 중앙값 0.75)
 UPLOAD_TYPES = ["jpg", "jpeg", "png", "webp"]
+# 카메라는 '카메라 켜기'를 눌렀을 때만 켜고, 켠 뒤 이 시간 동안은 이 화면에 다시 와도 바로 켜서
+# 카메라 권한을 매번 다시 묻지 않게 합니다. (이 브라우저 탭의 세션에만 기억)
+CAMERA_TTL_S = 30 * 60
+CAMERA_ON_KEY = "photo_camera_on_at"
+
+
+def camera_is_on() -> bool:
+    started = st.session_state.get(CAMERA_ON_KEY)
+    return started is not None and time.time() - started <= CAMERA_TTL_S
+
+
+def turn_camera_on() -> None:
+    st.session_state[CAMERA_ON_KEY] = time.time()
+
+
+def turn_camera_off() -> None:
+    st.session_state.pop(CAMERA_ON_KEY, None)
+    st.session_state.pop("photo_camera", None)
 
 
 @st.cache_resource(show_spinner=False)
@@ -52,7 +72,14 @@ with st.container(border=True):
         "강아지 사진", type=UPLOAD_TYPES, key="photo_upload", label_visibility="collapsed",
         help="강아지 얼굴과 몸이 잘 보이는 사진일수록 잘 찾아요.",
     )  # fmt: skip
-    taken = camera_tab.camera_input("강아지를 찍어 주세요", key="photo_camera")
+    taken = None
+    with camera_tab:
+        if camera_is_on():
+            taken = st.camera_input("강아지를 찍어 주세요", key="photo_camera")
+            st.button("카메라 끄기", on_click=turn_camera_off, type="tertiary", icon=":material/videocam_off:")
+        else:
+            st.caption("카메라는 아래 버튼을 눌렀을 때만 켜요. 한 번 켜면 30분 동안은 이 화면에 다시 와도 바로 켜져요.")
+            st.button("카메라 켜기", on_click=turn_camera_on, icon=":material/photo_camera:")
     sido = st.selectbox(
         "어디에서 찾을까요?", [WHOLE_COUNTRY, *REGION_CENTERS], key="photo_sido", persist_state=S.PERSIST,
         help="보호소 주소 기준이에요.",
