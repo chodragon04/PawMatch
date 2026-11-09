@@ -71,9 +71,9 @@ def survey_form(max_km: float | None, breeds: list[tuple[str, int]]) -> M.Survey
                 help="품종을 고르면 그 품종의 아이만 추천해요. 괄호 안은 지금 보호 중인 마릿수예요.",
                 key=K("breeds"), **keep,
             )  # fmt: skip
-            st.caption("아무것도 고르지 않으면 상관없음이에요. 여러 개를 고르면 그중 하나만 맞아도 돼요.")
+            st.caption("안 고르면 상관없음 · 여러 개를 고르면 하나만 맞아도 돼요")
 
-        if not st.form_submit_button("🐾 나와 잘 맞는 아이 찾기", type="primary", width="stretch"):
+        if not st.form_submit_button("나와 잘 맞는 아이 찾기", icon=":material/pets:", type="primary", width="stretch"):
             return None
     return M.Survey(
         home=home, walk=walk, first_dog=first_dog, has_kids=has_kids, has_pets=has_pets, away=away,
@@ -101,12 +101,7 @@ def show_more() -> None:
 
 
 page_header("입양 매칭")
-st.write(
-    "어떤 아이가 나에게 맞을지 모르겠다면, **내 생활 환경**을 알려주세요. 집 크기, 산책 시간, 반려 경험, 가족, "
-    "집을 비우는 시간으로 잘 맞을 것 같은 아이와 **그 이유**, **미리 알아두면 좋은 점**을 알려드려요. "
-    "점수는 보호소가 적은 체중·나이·특징 메모로 계산한 **참고용**이니, 마음에 드는 아이가 있다면 "
-    "꼭 보호소에 성격과 건강 상태를 문의해 주세요."
-)
+st.write("생활 환경을 알려주면 잘 맞는 아이와 **그 이유**를 알려드려요.")
 
 inject_card_css()
 data = load_data_or_stop()
@@ -148,11 +143,13 @@ if not results:
     st.stop()
 
 limit = min(st.session_state.get("match_limit", PAGE_SIZE), len(results))
-st.subheader(f"나와 잘 맞을 것 같은 아이들 (상위 {limit}마리)")
+st.subheader(f"나와 잘 맞는 아이 {limit}마리")
 if survey.breeds:
     st.caption("품종: " + ", ".join(survey.breeds))
-if origin is None:
-    st.caption("위치를 정하면 가까운 보호소의 아이에게 거리 점수가 더해져요.")
+st.caption(
+    "점수는 공공데이터로 계산한 참고용이에요. 성격과 건강은 꼭 보호소에 물어봐 주세요."
+    + ("" if origin is not None else " 위치를 정하면 거리 점수도 더해져요.")
+)
 
 shown = results[:limit]
 for start in range(0, len(shown), COLUMNS):
@@ -165,11 +162,8 @@ if limit < len(results):
     st.button("추천 더 보기", on_click=show_more, width="stretch")
 
 with st.container(border=True):
-    st.markdown(
-        "🐶 **보호견 둘러보기**에서도 이 설문 답변으로 적합도를 볼 수 있어요. "
-        "지역·크기·나이 같은 조건으로 좁혀 보면서 **나와 잘 맞는 순**으로 정렬해 보세요."
-    )
-    if st.button("보호견 둘러보기에서 나와 잘 맞는 순으로 보기", icon="🐶"):
+    st.markdown("**보호견 둘러보기**에서 조건을 좁혀 가며 **나와 잘 맞는 순**으로 볼 수도 있어요.")
+    if st.button("둘러보기에서 나와 잘 맞는 순으로 보기", icon=":material/pets:"):
         st.session_state[S.BROWSE_ORDER] = B.FIT
         st.session_state.pop(S.BROWSE_LIMIT, None)  # 둘러보기는 처음 개수부터
         st.switch_page("views/browse.py")
