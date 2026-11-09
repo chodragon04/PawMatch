@@ -44,10 +44,15 @@ pages = [
     st.Page("views/browse.py", title="보호견 둘러보기", icon=":material/pets:"),
     st.Page("views/match.py", title="입양 매칭", icon=":material/volunteer_activism:"),
     st.Page("views/photo_search.py", title="사진으로 찾기", icon=":material/photo_camera:"),
+    st.Page("views/favorites.py", title="찜한 아이", icon=":material/favorite:"),
 ]
 # 하단 탭에는 짧은 이름을 씁니다.
-SHORT_TITLES = {"보호견 둘러보기": "둘러보기", "입양 매칭": "매칭", "사진으로 찾기": "사진 찾기"}
+SHORT_TITLES = {"보호견 둘러보기": "둘러보기", "입양 매칭": "매칭", "사진으로 찾기": "사진 찾기", "찜한 아이": "찜"}
 
 page = st.navigation(pages, position="hidden")
+# 다른 화면에서 넘어올 때마다 1씩 올립니다. (찜 화면이 들어올 때마다 브라우저의 찜 목록을 새로 읽도록)
+if st.session_state.get("pm_page") != page.url_path:
+    st.session_state["pm_page"] = page.url_path
+    st.session_state["pm_page_visit"] = st.session_state.get("pm_page_visit", 0) + 1
 render_nav_bar(pages, page, short_titles=SHORT_TITLES)
 page.run()
