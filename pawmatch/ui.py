@@ -12,6 +12,7 @@ from pawmatch.api import ApiError
 from pawmatch.config import get_api_key
 from pawmatch.data import STORE, WARN_AFTER, Dataset
 from pawmatch.display import adoption_status, format_age, format_sex, format_updated, photo_urls, status_badge
+from pawmatch.favorites import FAVORITE_CSS, FAVORITE_JS, PAINT_JS, heart_button_html
 
 PHOTO_FAIL_TITLE = "사진을 불러오지 못했어요"
 PHOTO_FAIL_DETAIL = "보호소에 문의하면 아이의 모습을 확인할 수 있어요"
@@ -63,8 +64,10 @@ def photo_html(dog: dict, element_id: str) -> str:
         f"<small>{PHOTO_FAIL_DETAIL}</small></div>"
     )
     eid = html.escape(element_id, quote=True)
+    dog_id = dog.get("desertionNo")
+    heart = (heart_button_html(dog_id) + PAINT_JS) if dog_id else ""
     if not urls:
-        return f'<div class="pm-photo pm-failed" id="{eid}">{fail}</div>'
+        return f'<div class="pm-photo pm-failed" id="{eid}">{fail}{heart}</div>'
 
     alt = html.escape(dog.get("kindFullNm") or dog.get("kindNm") or "보호 중인 강아지", quote=True)
     srcs = html.escape(json.dumps(urls), quote=True)
@@ -72,7 +75,7 @@ def photo_html(dog: dict, element_id: str) -> str:
     script = _FALLBACK_JS % {"id": json.dumps(element_id)}
     return (
         f'<div class="pm-photo" id="{eid}" data-srcs="{srcs}">'
-        f'<img src="{first}" alt="{alt}" loading="lazy" referrerpolicy="no-referrer">{fail}</div>'
+        f'<img src="{first}" alt="{alt}" loading="lazy" referrerpolicy="no-referrer">{fail}{heart}</div>'
         f"{script}"
     )
 
@@ -267,7 +270,8 @@ def page_header(title: str) -> None:
 
 
 def inject_card_css() -> None:
-    st.html(CARD_CSS)
+    """카드 모양과 찜(하트) 버튼 동작을 화면에 넣습니다. 카드를 그리기 전에 한 번 부릅니다."""
+    st.html(CARD_CSS + FAVORITE_CSS + FAVORITE_JS, unsafe_allow_javascript=True)
 
 
 def render_card(
