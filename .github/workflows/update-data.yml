@@ -52,7 +52,7 @@ jobs:
           DATA_GO_KR_API_KEY: ${{ secrets.DATA_GO_KR_API_KEY }}
         run: python scripts/fetch_data.py --out out
 
-      # 실패해도 데이터 스냅샷은 저장되도록 계속 진행합니다. (스크립트가 이전 임베딩이라도 남겨 둠)
+      # 실패해도 데이터 스냅샷은 저장되도록 계속 진행합니다. (임베딩 파일이 없으면 저장 단계가 이전 파일을 그대로 둠)
       # GitHub 서버에서 한국 사진 서버까지 한 장 받는 데 오래 걸려서(8장씩 동시에 받을 때 초당 약 0.9장)
       # 동시에 16장씩 받습니다.
       - name: 사진 임베딩
@@ -67,6 +67,15 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # 이번에 임베딩을 만들지 못했으면 data 브랜치의 이전 파일을 그대로 둡니다. (force push로 지워지지 않게)
+          if [ ! -f out/embeddings.npz ]; then
+            if git fetch -q --depth 1 origin data && git show FETCH_HEAD:embeddings.npz > out/embeddings.npz; then
+              echo "이번에 만든 임베딩이 없어서 이전 embeddings.npz를 그대로 저장합니다."
+            else
+              rm -f out/embeddings.npz
+              echo "::warning::embeddings.npz가 없습니다. 사진으로 찾기가 준비 중으로 보일 수 있습니다."
+            fi
+          fi
           cd out
           cat > README.md <<'EOF'
           # PawMatch 데이터 스냅샷
