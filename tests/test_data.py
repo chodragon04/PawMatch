@@ -26,6 +26,16 @@ def test_too_few_dogs_are_not_saved(tmp_path):
     assert D.read_local_snapshot(tmp_path) is None
 
 
+def test_fetch_live_rejects_too_few_dogs(monkeypatch):
+    """API가 성공 코드와 함께 몇 마리만 주면, 앱의 정상 데이터를 덮어쓰지 않도록 실패로 봅니다."""
+    monkeypatch.setattr(D, "fetch_shelters", lambda key: SHELTERS)
+    monkeypatch.setattr(D, "fetch_all_dogs", lambda key: DOGS[:3])
+    with pytest.raises(ApiError, match="3마리"):
+        D.fetch_live("KEY")
+    monkeypatch.setattr(D, "fetch_all_dogs", lambda key: DOGS)
+    assert len(D.fetch_live("KEY").dogs) == len(DOGS)
+
+
 def test_broken_snapshot_is_ignored(tmp_path):
     (tmp_path / D.SNAPSHOT_FILE).write_bytes(b"not gzip")
     assert D.read_local_snapshot(tmp_path) is None
