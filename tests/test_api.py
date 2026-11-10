@@ -217,3 +217,20 @@ def test_fetch_shelters_uses_shelter_endpoint(fake_get):
     shelters = api.fetch_shelters("KEY")
     assert calls["url"] == f"{api.SHELTER_BASE_URL}/shelterInfo_v2"
     assert shelters[0]["careNm"] == "A"
+
+
+def test_network_error_message_does_not_leak_api_key(monkeypatch):
+    """연결 오류 문구에는 요청 주소(serviceKey 포함)가 들어 있어서, 그대로 내보내면 키가 로그·화면에 나옵니다."""
+    secret = "SECRET+key/abc=="
+
+    def _get(url, params=None, timeout=None):
+        encoded = requests.utils.quote(secret, safe="")
+        raise requests.ConnectionError(f"Max retries exceeded with url: /x?serviceKey={encoded}&_type=json")
+
+    monkeypatch.setattr(api._SESSION, "get", _get)
+    with pytest.raises(api.ApiError) as info:
+        api.fetch_abandoned_dogs(secret)
+    message = str(info.value)
+    assert "ConnectionError" in message
+    assert "serviceKey" not in message and "SECRET" not in message
+    assert info.value.__cause__ is None  # 원래 오류를 붙여 두면 traceback에 주소가 다시 나옴
