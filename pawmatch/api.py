@@ -50,7 +50,9 @@ def _get_with_retry(url: str, query: dict, timeout: float) -> requests.Response:
             resp = _SESSION.get(url, params=query, timeout=timeout)
         except requests.RequestException as exc:
             if last:
-                raise ApiError(f"API 서버에 연결하지 못했습니다: {exc}") from exc
+                # 오류 문구(exc)에는 요청 주소 전체가 들어 있고, 그 안에 serviceKey가 있습니다.
+                # 이 문구는 공개 Actions 로그와 사용자 화면에 나가므로 오류 종류만 남깁니다.
+                raise ApiError(f"API 서버에 연결하지 못했습니다 ({type(exc).__name__})") from None
         else:
             if resp.status_code < 500 or last:
                 return resp

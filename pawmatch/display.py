@@ -36,21 +36,26 @@ def parse_ymd(raw: str | None) -> date | None:
         return None
 
 
+KST = timezone(timedelta(hours=9))
+
+
+def today_kst() -> date:
+    """한국 날짜. 서버(Streamlit Cloud, GitHub Actions)는 UTC라서 date.today()는 한국 0~9시에 하루 늦습니다."""
+    return datetime.now(KST).date()
+
+
 def adoption_status(notice_end: str | None, today: date | None = None) -> str:
     """공고 종료일 기준 상태 문구.
 
     공고 기간에는 원래 보호자가 찾아갈 수 있도록 기다리고, 기간이 끝나면 입양을 문의할 수 있습니다.
     """
-    today = today or date.today()
+    today = today or today_kst()
     end = parse_ymd(notice_end)
     if end is None:
         return "보호 중"
     if end >= today:
         return f"공고 중 · {end.month}/{end.day}까지"
     return "입양 가능"
-
-
-KST = timezone(timedelta(hours=9))
 
 
 def status_badge(status: str) -> str:

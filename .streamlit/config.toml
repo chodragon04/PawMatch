@@ -14,3 +14,7 @@ font = "Gowun Dodum:https://fonts.googleapis.com/css2?family=Gowun+Dodum&display
 headingFont = "Jua:https://fonts.googleapis.com/css2?family=Jua&display=swap"
 # Jua는 보통 굵기 하나뿐이라, 굵게(600~700) 그리면 브라우저가 획을 억지로 두껍게 만들어 뭉개집니다.
 headingFontWeights = [400, 400, 400, 400, 400, 400]
+
+[server]
+# 사진으로 찾기에 올리는 사진 크기 한도(MB). 기본 200MB는 메모리가 1GB 정도인 Streamlit Cloud에 너무 큽니다.
+maxUploadSize = 10

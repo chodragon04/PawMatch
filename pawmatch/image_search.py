@@ -128,8 +128,13 @@ def photo_targets(dogs: Iterable[dict], per_dog: int = MAX_PHOTOS_PER_DOG) -> li
 
 
 def load_image(data: bytes) -> Image.Image:
-    """사진 바이트 → RGB 이미지 (휴대폰 사진의 회전 정보 반영, 큰 사진은 줄임)."""
-    image = ImageOps.exif_transpose(Image.open(io.BytesIO(data)))
+    """사진 바이트 → RGB 이미지 (휴대폰 사진의 회전 정보 반영, 큰 사진은 줄임).
+
+    JPEG는 draft로 처음부터 작게(1/2~1/8) 읽어서, 큰 휴대폰 사진도 원본 크기만큼 메모리를 쓰지 않습니다.
+    """
+    image = Image.open(io.BytesIO(data))
+    image.draft("RGB", (MAX_IMAGE_SIDE * 2, MAX_IMAGE_SIDE * 2))
+    image = ImageOps.exif_transpose(image)
     image = image.convert("RGB")
     image.thumbnail((MAX_IMAGE_SIDE, MAX_IMAGE_SIDE))
     return image

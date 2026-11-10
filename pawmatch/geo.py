@@ -128,6 +128,17 @@ def _current_sigungu(sido: str, sigungu: str, address: str) -> str:
     return sigungu
 
 
+def _area_of(address: str | None) -> tuple[str, str]:
+    """주소의 (시/도, 시/군/구). 옛 이름은 지금 이름으로 바꿉니다. 세종은 시/군/구가 없어 ''."""
+    tokens = (address or "").split()
+    if not tokens:
+        return "", ""
+    sido = SIDO_ALIASES.get(tokens[0], tokens[0])
+    if sido == "세종특별자치시" or len(tokens) < 2:
+        return sido, ""
+    return sido, _current_sigungu(sido, tokens[1], address or "")
+
+
 def address_in_area(address: str | None, sido: str, sigungu: str | None = None) -> bool:
     """주소가 고른 시/도(와 시/군/구) 안인지. 예: '인천광역시 연수구 ...' → ('인천광역시', '연수구')
 
@@ -154,12 +165,14 @@ def group_by_shelter(
     Returns:
         [{"name", "distance_km", "address", "tel", "in_area", "dogs": [...]}, ...]
     """
-    groups: dict[str, dict] = {}
+    groups: dict[tuple[str, str, str], dict] = {}
     for dog, distance in ranked:
         inside = area is not None and address_in_area(dog.get("careAddr"), *area)
         if distance is None and not inside:
             continue
-        key = _normalize_name(dog.get("careNm")) or str(dog.get("careRegNo"))
+        # 이름이 같은 다른 지역 보호소(예: 청주·여수의 '반려동물보호센터')가 합쳐지지 않게 지역도 함께 봅니다.
+        name = _normalize_name(dog.get("careNm"))
+        key = (name, *_area_of(dog.get("careAddr"))) if name else ("", str(dog.get("careRegNo")), "")
         group = groups.get(key)
         if group is None:
             group = groups[key] = {

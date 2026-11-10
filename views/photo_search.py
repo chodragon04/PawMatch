@@ -1,3 +1,4 @@
+import sys
 import time
 
 import streamlit as st
@@ -92,7 +93,9 @@ try:
     with st.spinner("사진을 분석하는 중이에요... (처음 한 번은 분석 모델을 준비하느라 1분 정도 걸릴 수 있어요)"):
         query = embed_photo(photo.getvalue())
 except Exception as exc:  # 깨진 사진, 모델 내려받기 실패 등
-    st.error(f"사진을 분석하지 못했어요. 다른 사진으로 다시 시도해 주세요.\n\n({exc})")
+    # 자세한 오류는 화면 대신 서버 로그(Streamlit Cloud의 Manage app → Logs)에만 남깁니다.
+    print(f"[pawmatch] 사진 분석 실패: {type(exc).__name__}: {exc}", file=sys.stderr)
+    st.error("사진을 분석하지 못했어요. 다른 사진으로 다시 시도해 주세요.")
     st.stop()
 
 by_id = {str(dog.get("desertionNo")): dog for dog in data.dogs}

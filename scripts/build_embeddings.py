@@ -5,6 +5,9 @@
 - 이전 임베딩(`data` 브랜치)에 있는 사진은 다시 계산하지 않습니다. 새로 들어온 아이의 사진만 계산합니다.
 - --time-budget(초)이 지나면 남은 사진은 다음 실행으로 미룹니다. (처음 한 번은 사진이 많아 오래 걸림)
 - 중간에 실패해도 이전 임베딩(지금 보호 중인 아이 것만)을 저장해서, 사진으로 찾기가 멈추지 않게 합니다.
+- 이전 임베딩을 받지 못하면(일시적인 연결 오류 등) 처음부터 다시 만들지 않고 실패로 끝냅니다.
+  처음부터 다시 만들면 30분 안에 다 못 끝내서 빠지는 아이가 생기기 때문입니다. 이때 워크플로는
+  data 브랜치의 이전 embeddings.npz를 그대로 둡니다. 정말 처음 만들 때만 --allow-fresh를 붙입니다.
 """
 
 from __future__ import annotations
@@ -33,12 +36,16 @@ def main() -> int:
     parser.add_argument("--out", type=Path, default=Path("out"))
     parser.add_argument("--time-budget", type=float, default=1500, help="사진 받기·계산에 쓸 최대 시간(초)")
     parser.add_argument("--workers", type=int, default=8, help="동시에 받을 사진 수")
+    parser.add_argument("--allow-fresh", action="store_true", help="이전 임베딩이 없을 때 처음부터 만들기")
     args = parser.parse_args()
 
     started = time.monotonic()
     dogs = decode_snapshot(args.snapshot.read_bytes()).dogs
     previous = read_remote_index()
     print(f"보호견 {len(dogs):,}마리, 이전 임베딩 {len(previous) if previous else 0:,}장")
+    if previous is None and not args.allow_fresh:
+        print("이전 임베딩을 받지 못해 이번에는 건너뜁니다. (처음 만들 때는 --allow-fresh)", file=sys.stderr)
+        return 1
 
     out_path = args.out / EMBEDDINGS_FILE
     args.out.mkdir(parents=True, exist_ok=True)
@@ -47,7 +54,7 @@ def main() -> int:
             dogs, previous, ClipEmbedder(), deadline=started + args.time_budget, workers=args.workers
         )
     except Exception as exc:  # 모델 내려받기 실패 등: 이전 임베딩이라도 남깁니다
-        print(f"임베딩을 만들지 못했습니다: {exc}", file=sys.stderr)
+        print(f"임베딩을 만들지 못했습니다: {type(exc).__name__}: {exc}", file=sys.stderr)
         if previous is None:
             return 1
         out_path.write_bytes(encode_index(keep_current(previous, dogs)))

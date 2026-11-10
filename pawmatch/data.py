@@ -17,6 +17,7 @@ from __future__ import annotations
 import gzip
 import json
 import os
+import sys
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
@@ -103,12 +104,18 @@ def read_remote_snapshot(base_url: str | None = None, timeout: float = 15) -> Da
 
 
 def fetch_live(api_key: str) -> Dataset:
-    """공공데이터 API에서 유기견과 보호소를 동시에 받아옵니다."""
+    """공공데이터 API에서 유기견과 보호소를 동시에 받아옵니다.
+
+    API가 '성공'이라고 하면서 몇 마리만 주는 경우가 있어서, MIN_DOGS보다 적으면 실패로 봅니다.
+    (앱이 뒤에서 새로 받을 때 정상 데이터를 덮어쓰지 않고, 스크립트는 다시 시도하게 됩니다)
+    """
     with ThreadPoolExecutor(max_workers=2) as pool:
         dogs_future = pool.submit(fetch_all_dogs, api_key)
         shelters_future = pool.submit(fetch_shelters, api_key)
         dogs = dogs_future.result()
         shelters = shelters_future.result()
+    if len(dogs) < MIN_DOGS:
+        raise ApiError(f"유기견이 {len(dogs)}마리뿐이라 API 응답이 잘못된 것으로 보고 쓰지 않았습니다.")
     return Dataset(_slim(dogs), shelters, datetime.now(timezone.utc), API)
 
 
@@ -190,6 +197,7 @@ class DataStore:
             self.last_error = None
         except Exception as exc:  # 뒤에서 도는 작업이라 실패해도 지금 데이터를 계속 씁니다
             self.last_error = str(exc)
+            print(f"[pawmatch] 데이터 새로 받기 실패, 지금 데이터를 계속 씁니다: {exc}", file=sys.stderr)
         finally:
             with self._lock:
                 self.refreshing = False
