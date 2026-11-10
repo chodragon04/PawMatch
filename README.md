@@ -9,10 +9,11 @@
 
 **🔗 데모: https://pawmatch-kr.streamlit.app**
 
-- 🐾 **홈**: 내 위치나 고른 지역에서 가까운 보호소의 아이들부터 보기
-- 🐶 **보호견 둘러보기**: 원하는 아이가 있다면 지역·크기·나이·품종 같은 조건으로 직접 찾기
-- 🏠 **입양 매칭**: 어떤 아이가 맞을지 모르겠다면 생활 환경 설문으로 잘 맞는 아이와 그 이유 알아보기
+- 🏠 **홈**: 내 위치나 고른 지역에서 가까운 보호소의 아이들부터 보기
+- 🐾 **보호견 둘러보기**: 원하는 아이가 있다면 지역·크기·나이·품종 같은 조건으로 직접 찾기
+- 🤝 **입양 매칭**: 어떤 아이가 맞을지 모르겠다면 생활 환경 설문으로 잘 맞는 아이와 그 이유 알아보기
 - 📷 **사진으로 찾기**: 강아지 사진을 올리면 생김새가 비슷한 보호견 찾기
+- 🧡 **찜**: 마음에 드는 아이를 하트로 모아 두고 다시 보기
 
 ## 주요 기능
 
@@ -23,7 +24,8 @@
 | 마감 임박 우선 보기 | 보호견 둘러보기의 '공고 마감 임박순' 정렬 | 완료 |
 | 입양 매칭 | 생활 환경 설문(주거 형태, 산책 시간, 반려 경험, 가족 구성, 집 비우는 시간)으로 적합도 점수를 계산해 추천 이유·주의할 점과 함께 추천. 원하는 크기·나이·성별·품종은 선택 항목. '자세히 보기'로 사진 넘겨 보기·상세 정보·보호소 주소와 연락처 확인 | 완료 |
 | 사진으로 찾기 | 강아지 사진을 올리거나 찍으면 사전학습 이미지 모델(CLIP)로 생김새가 비슷한 보호견 검색, 지역으로 좁히기 | 완료 |
-| 화면 이동 | 모든 화면 위 바로가기 버튼 줄(모바일에서도 항상 보임), 홈 바로가기 카드. 다른 화면에 갔다 와도 입력한 조건 유지. 한 번 받은 내 위치·켠 카메라는 30분 동안 다시 묻지 않음 | 완료 |
+| 찜하기 | 카드 사진 왼쪽 아래 하트로 마음에 드는 아이를 모아 두고 '찜' 탭에서 보기. 찜 목록은 브라우저에만 저장(로그인 필요 없음) | 완료 |
+| 화면 이동 | 화면 맨 아래 고정 아이콘 탭(홈·둘러보기·매칭·사진 찾기·찜), 홈 맨 아래 바로가기 카드. 다른 화면에 갔다 와도 입력한 조건 유지. 한 번 받은 내 위치·켠 카메라는 30분 동안 다시 묻지 않음 | 완료 |
 | 데이터 자동 갱신 | GitHub Actions가 30분마다 데이터를 받아 두어 첫 화면이 빠르게 열림 | 완료 |
 
 ## 데모 / 스크린샷
@@ -35,12 +37,14 @@
 > 사진으로 찾기는 처음 사진을 올릴 때 분석 모델을 준비하느라 조금 더 걸립니다.
 
 ### 홈: 가까운 보호소의 아이들
-고른 지역(예: 경기도 수원시) 안의 보호소를 먼저, 그다음 가까운 보호소 순으로 보호소별로 묶어 보여줍니다.
+맨 위에는 지금 가족을 기다리는 아이 수만 짧게 보여주고(서비스 소개는 'ⓘ 소개' 버튼 안), 바로 아래에서
+내 위치나 고른 지역(예: 경기도) 안의 보호소를 먼저, 그다음 가까운 보호소 순으로 보호소별로 묶어 보여줍니다.
 
 ![홈 화면](docs/images/home.jpg)
 
 ### 보호견 둘러보기: 조건으로 직접 찾기
 지역·크기·나이·성별·상태·품종·검색어로 거르고, 최근 등록순·공고 마감 임박순·오래 기다린 순으로 정렬합니다.
+사진 왼쪽 아래 하트(♡)를 누르면 찜 목록에 들어갑니다.
 
 ![보호견 둘러보기](docs/images/browse.jpg)
 
@@ -59,8 +63,13 @@
 
 ![사진으로 찾기](docs/images/photo_search.jpg)
 
+### 찜한 아이
+어느 화면에서든 하트를 누른 아이를 '찜' 탭에서 모아 봅니다. 찜 목록은 이 기기의 브라우저에만 저장됩니다.
+
+![찜한 아이](docs/images/favorites.jpg)
+
 ### 휴대폰 화면
-모든 화면 위에 바로가기 버튼 줄이 있어 휴대폰에서도 메뉴를 바로 찾을 수 있습니다.
+화면 맨 아래 고정 아이콘 탭으로 어느 화면에서든 바로 이동합니다. (왼쪽부터 홈, 둘러보기, 찜)
 
 ![휴대폰 화면](docs/images/mobile.jpg)
 
@@ -71,14 +80,32 @@
 - **데이터**: 공공데이터포털 국가동물보호정보시스템 구조동물 조회 서비스
 - **이미지 검색**: 사전학습 이미지 모델 CLIP ViT-B/32 (ONNX), [fastembed](https://github.com/qdrant/fastembed) + onnxruntime (PyTorch 없이 CPU로 실행)
 - **데이터 갱신**: GitHub Actions (30분마다 실행, `data` 브랜치에 스냅샷 저장)
-- **디자인**: 흰 배경 + 주황 포인트(`#FF8A3D`) 테마(`.streamlit/config.toml`), 휴대폰이 다크 모드여도 밝은 화면 유지. 글꼴 Jua(제목)·Gowun Dodum(본문)
+- **디자인**: 흰 배경 + 주황 포인트(`#FF8A3D`) 테마(`.streamlit/config.toml`), 휴대폰이 다크 모드여도 밝은 화면 유지. 글꼴 Jua(제목)·Gowun Dodum(본문), Material 아이콘. 화면 맨 아래 고정 탭
+- **찜 저장**: 브라우저 localStorage ([streamlit-js-eval](https://github.com/aghasemi/streamlit_js_eval)로 읽기)
 - **배포**: [Streamlit Community Cloud](https://streamlit.io/cloud) (GitHub 푸시 시 자동 반영)
+
+## 시스템 구조
+
+```mermaid
+flowchart LR
+    API["공공데이터포털<br/>구조동물·보호소 API"] -->|"30분마다"| GA["GitHub Actions<br/>fetch_data.py<br/>build_embeddings.py"]
+    GA -->|"snapshot.json.gz<br/>embeddings.npz"| DATA[("data 브랜치")]
+    DATA --> APP["Streamlit 앱<br/>Community Cloud"]
+    API -.->|"저장된 데이터가 오래됐을 때만"| APP
+    KAKAO["카카오 로컬 API"] -.->|"시/군/구 좌표"| APP
+    APP <--> USER["사용자 브라우저"]
+    USER --- LS[("localStorage<br/>찜 목록")]
+```
+
+- 공공데이터 API는 느리고 가끔 끊겨서, GitHub Actions가 미리 받아 둔 스냅샷을 앱이 바로 읽습니다. ([데이터 자동 갱신](#데이터-자동-갱신-github-actions))
+- 사진으로 찾기에 쓰는 보호견 사진 임베딩도 같은 워크플로에서 새로 들어온 사진만 계산해 둡니다. ([사진으로 찾기](#사진으로-찾기))
+- 사용자가 올린 사진, 내 위치, 찜 목록은 서버에 저장하지 않습니다.
 
 ## 프로젝트 구조
 
 ```
 PawMatch/
-├── app.py               # Streamlit 진입점 (페이지 내비게이션)
+├── app.py               # Streamlit 진입점 (페이지 목록, 하단 탭, 배포 갱신 때 모듈 다시 불러오기)
 ├── CLAUDE.md            # AI 코딩 도구(Claude Code) 작업 규칙
 ├── .streamlit/config.toml # 화면 테마 (색·글꼴·모서리)
 ├── pytest.ini           # 테스트 설정 (프로젝트 루트를 모듈 경로에 추가)
@@ -86,7 +113,8 @@ PawMatch/
 │   ├── home.py          # 홈
 │   ├── browse.py        # 보호견 둘러보기
 │   ├── match.py         # 입양 매칭
-│   └── photo_search.py  # 사진으로 찾기
+│   ├── photo_search.py  # 사진으로 찾기
+│   └── favorites.py     # 찜한 아이
 ├── pawmatch/            # 핵심 로직
 │   ├── config.py        # 환경 변수(API 키) 로딩
 │   ├── api.py           # 공공데이터 API 클라이언트 (유기견, 보호소, 동시 요청·재시도)
@@ -100,7 +128,8 @@ PawMatch/
 │   ├── matching.py      # 설문 기반 매칭 점수 계산
 │   ├── browse.py        # 보호견 둘러보기 조건 검색·정렬
 │   ├── display.py       # 나이·성별·공고 상태 표시 문구
-│   ├── ui.py            # 유기견 카드·사진 캐러셀 (사진 대체 처리 포함), 데이터 로딩 화면
+│   ├── ui.py            # 유기견 카드·사진 캐러셀 (사진 대체 처리 포함), 하단 탭, 데이터 로딩 화면
+│   ├── favorites.py     # 찜하기: 하트 버튼, 브라우저 저장(localStorage), 찜 목록 읽기
 │   ├── detail.py        # 유기견 상세 정보 창 (사진, 정보, 보호소 주소·연락처)
 │   └── image_search.py  # 사진으로 찾기: CLIP 임베딩 만들기·저장·유사도 검색
 ├── scripts/
@@ -190,6 +219,10 @@ PawMatch/
 
 4. **Deploy** 클릭. 이후 해당 브랜치에 푸시하면 자동으로 다시 배포됩니다.
 
+> 앱이 켜진 채로 새 코드가 들어오면 Streamlit은 `app.py`만 새로 읽고 `pawmatch/` 모듈은 예전 코드를 그대로 써서
+> 오류가 날 수 있습니다. 그래서 `app.py`가 `pawmatch/` 파일이 바뀐 것을 보면 모듈을 다시 불러오게 했습니다.
+> 그래도 화면이 예전 그대로면 오른쪽 아래 **Manage app → Reboot app**을 눌러 주세요.
+
 ## 데이터 자동 갱신 (GitHub Actions)
 
 공공데이터 API는 한 번 요청에 2~9초가 걸리고 가끔 연결이 끊겨서, 데이터를 미리 받아 둡니다.
@@ -225,6 +258,14 @@ GitHub Actions (매시 7분·37분)        Streamlit 앱
 - 사진 한 장 분석 약 70ms, 모델(약 340MB)은 서버가 처음 쓸 때 한 번 내려받아 모든 사용자가 같이 씁니다.
 - 올린 사진은 비슷한 아이를 찾는 데에만 쓰고 저장하지 않습니다.
 
+## 찜하기
+
+- 카드 사진 왼쪽 아래 하트를 누르면 그 아이의 공고 번호를 브라우저 localStorage(`pawmatch_favorites`)에 저장합니다.
+  서버를 거치지 않아 바로 바뀌고, 같은 아이의 하트는 화면 어디에 있든 같이 바뀝니다.
+- 서버에는 저장하지 않아 로그인이 필요 없습니다. 대신 기기·브라우저마다 따로 저장되고, 브라우저 기록을 지우면 사라집니다.
+- '찜' 화면은 [streamlit-js-eval](https://github.com/aghasemi/streamlit_js_eval)로 목록을 읽어 지금 데이터와 맞춰 보여줍니다.
+  입양됐거나 공고가 끝나 데이터에서 빠진 아이는 몇 마리인지만 알려줍니다. (최근 찜한 순으로 최대 200마리)
+
 ## 입양 매칭 점수
 
 설문 응답과 보호소가 입력한 정보(체중, 나이, 품종, 특징 메모)로 항목별 점수(0~1)를 계산하고,
@@ -259,6 +300,19 @@ GitHub Actions (매시 7분·37분)        Streamlit 앱
 - 카카오 키(`KAKAO_REST_API_KEY`)가 없거나 찾지 못하면 시청/도청 위치를 기준으로 계산합니다.
   [Kakao Developers](https://developers.kakao.com/)에서 앱을 만들고 REST API 키를 발급받아 `.env` 또는 Streamlit Secrets에 넣으면 됩니다.
 
+## 사용자 테스트와 개선
+
+배포한 뒤 테스터들이 휴대폰으로 직접 써 보고 준 의견을 하나씩 반영했습니다.
+
+| 테스터 의견 | 반영한 내용 | PR |
+| --- | --- | --- |
+| 화면을 옮길 때마다 위치 권한을 다시 묻고, 사진 화면에 들어가자마자 카메라가 켜짐 | 한 번 받은 위치는 30분 동안 기억, 카메라는 '카메라 켜기'를 눌렀을 때만 켬 | [#16](https://github.com/chodragon04/PawMatch/pull/16) |
+| 귀여운 분위기면 좋겠고, 다크 모드에서도 같은 느낌이었으면 | 흰 배경 + 주황 포인트 테마, 다크 모드에서도 밝은 화면 유지 | [#17](https://github.com/chodragon04/PawMatch/pull/17) |
+| 휴대폰에서 위쪽 메뉴가 칸 안에서 옆으로 밀려 보임 | 화면 맨 아래 고정 아이콘 탭 + 화면마다 굵은 제목. Streamlit 배지에 가리지 않게 배치 | [#18](https://github.com/chodragon04/PawMatch/pull/18), [#19](https://github.com/chodragon04/PawMatch/pull/19) |
+| 홈에서 가까운 보호소 아이들을 먼저 보고 싶고, 소개 글은 작게 | 홈 맨 위를 한 줄로, 소개는 버튼 안으로, 바로가기 카드는 맨 아래(카드 어디를 눌러도 이동) | [#20](https://github.com/chodragon04/PawMatch/pull/20) |
+| 글이 너무 많음 | 안내 문장을 한 줄로 줄이고, 자세한 설명은 도움말(?)로 옮김 | [#21](https://github.com/chodragon04/PawMatch/pull/21) |
+| 마음에 드는 아이를 모아 두고 싶음 | 사진 왼쪽 아래 하트로 찜, '찜' 탭 | [#22](https://github.com/chodragon04/PawMatch/pull/22) |
+
 ## 데이터 출처
 
 - 농림축산식품부 농림축산검역본부, 국가동물보호정보시스템 구조동물 조회 서비스 (공공데이터포털)
@@ -269,7 +323,8 @@ GitHub Actions (매시 7분·37분)        Streamlit 앱
 ## 참고자료
 
 - [Streamlit Documentation](https://docs.streamlit.io/)
-- [streamlit-js-eval](https://github.com/aghasemi/streamlit_js_eval) (MIT License): 브라우저 위치 정보(Geolocation) 가져오기에 사용
+- [streamlit-js-eval](https://github.com/aghasemi/streamlit_js_eval) (MIT License): 브라우저 위치 정보(Geolocation) 가져오기, 찜 목록(localStorage) 읽기에 사용
+- [Material Symbols](https://fonts.google.com/icons) (Google, Apache License 2.0): 하단 탭·버튼 아이콘 (Streamlit 내장)
 - [공공데이터포털](https://www.data.go.kr/)
 - [카카오 로컬 API](https://developers.kakao.com/docs/latest/ko/local/dev-guide): 시/군/구 위치(좌표) 찾기에 사용
 - [CLIP](https://github.com/openai/CLIP) (OpenAI, MIT License): 사진으로 찾기의 이미지 모델 (ViT-B/32).
