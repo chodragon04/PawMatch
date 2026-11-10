@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Cho Yongjun
+# SPDX-License-Identifier: MIT
 """공공데이터 API에서 보호견·보호소 데이터를 받아 스냅샷 파일로 저장합니다.
 
 GitHub Actions(.github/workflows/update-data.yml)가 30분마다 실행하고, 로컬에서도 쓸 수 있습니다.

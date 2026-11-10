@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Cho Yongjun
+# SPDX-License-Identifier: MIT
 """유기견 상세 정보 창: 사진 캐러셀, 기본 정보, 특징 메모, 보호소 주소·연락처."""
 
 from __future__ import annotations

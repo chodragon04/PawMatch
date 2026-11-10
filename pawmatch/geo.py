@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Cho Yongjun
+# SPDX-License-Identifier: MIT
 """위치/거리 계산: 사용자 위치에서 가까운 보호소 순으로 정렬합니다."""
 
 from __future__ import annotations
@@ -6,6 +8,7 @@ import math
 import re
 
 # 위치 권한을 허용하지 않은 경우 시/도를 고르면 시청/도청 위치를 기준으로 거리를 계산합니다.
+# (좌표는 직접 입력한 대략적인 값입니다)
 # 시/도 이름은 구조동물 조회 API의 시/도 목록(16곳)과 같습니다.
 REGION_CENTERS: dict[str, tuple[float, float]] = {
     "서울특별시": (37.5665, 126.9780),
@@ -30,7 +33,7 @@ EARTH_RADIUS_KM = 6371.0
 
 
 def haversine_km(a: tuple[float, float], b: tuple[float, float]) -> float:
-    """두 위경도 좌표 사이의 거리(km)."""
+    """두 위경도 좌표 사이의 거리(km). 하버사인 공식: https://en.wikipedia.org/wiki/Haversine_formula"""
     lat1, lon1, lat2, lon2 = map(math.radians, (*a, *b))
     h = math.sin((lat2 - lat1) / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin((lon2 - lon1) / 2) ** 2
     return 2 * EARTH_RADIUS_KM * math.asin(math.sqrt(h))

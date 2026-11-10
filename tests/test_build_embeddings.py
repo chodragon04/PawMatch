@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Cho Yongjun
+# SPDX-License-Identifier: MIT
 """scripts/build_embeddings.py 테스트: 이전 임베딩을 받지 못했을 때 처음부터 다시 만들지 않는지."""
 
 import importlib.util

@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Cho Yongjun
+# SPDX-License-Identifier: MIT
 """배포된 앱(Streamlit Community Cloud)이 잠들지 않게 실제 브라우저로 열어 봅니다.
 
 Streamlit Community Cloud는 한동안(약 12시간) 아무도 접속하지 않으면 앱을 재웁니다.

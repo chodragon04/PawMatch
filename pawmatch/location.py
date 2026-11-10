@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Cho Yongjun
+# SPDX-License-Identifier: MIT
 """기준 위치 고르기: 브라우저 위치(streamlit-js-eval) 또는 시/도 → 시/군/구 선택."""
 
 from __future__ import annotations

@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Cho Yongjun
+# SPDX-License-Identifier: MIT
 """보호견·보호소 데이터를 불러옵니다.
 
 공공데이터 API는 한 번 요청에 2~9초가 걸리고 가끔 연결이 끊겨서, GitHub Actions가 30분마다

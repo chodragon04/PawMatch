@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Cho Yongjun
+# SPDX-License-Identifier: MIT
 """PawMatch: 사진과 생활 환경으로 찾는 유기견 입양 매칭 웹서비스."""
 
 import time

@@ -36,6 +36,9 @@
 > (`.github/workflows/keep-awake.yml`), 그래도 "Yes, get this app back up!" 버튼이 보이면 눌러서 깨워 주세요(1분 정도 걸림).
 > 사진으로 찾기는 처음 사진을 올릴 때 분석 모델을 준비하느라 조금 더 걸립니다.
 
+> 스크린샷과 앱에 나오는 동물 사진·정보는 각 동물보호센터가 국가동물보호정보시스템에 올린 공공데이터입니다.
+> ([데이터 출처](#데이터-출처) 참고)
+
 ### 홈: 가까운 보호소의 아이들
 맨 위에는 지금 가족을 기다리는 아이 수만 짧게 보여주고(서비스 소개는 'ⓘ 소개' 버튼 안), 바로 아래에서
 내 위치나 고른 지역(예: 경기도) 안의 보호소를 먼저, 그다음 가까운 보호소 순으로 보호소별로 묶어 보여줍니다.
@@ -318,14 +321,20 @@ GitHub Actions (매시 7분·37분)        Streamlit 앱
 
 ## 데이터 출처
 
-- 농림축산식품부 농림축산검역본부, 국가동물보호정보시스템 구조동물 조회 서비스 (공공데이터포털)
-- 농림축산식품부 농림축산검역본부, 국가동물보호정보시스템 동물보호센터 정보 조회 서비스 (공공데이터포털)
+| 데이터 | 제공 | 이용허락범위 |
+| --- | --- | --- |
+| [구조동물 조회 서비스](https://www.data.go.kr/data/15098931/openapi.do) (보호견 정보·사진) | 농림축산식품부 농림축산검역본부, 국가동물보호정보시스템 (공공데이터포털) | 제한 없음 |
+| [동물보호센터 정보 조회서비스](https://www.data.go.kr/data/15098915/openapi.do) (보호소 주소·좌표·연락처·운영 시간) | 농림축산식품부 농림축산검역본부, 국가동물보호정보시스템 (공공데이터포털) | 제한 없음 |
+| [카카오 로컬 API](https://developers.kakao.com/docs/latest/ko/local/dev-guide) (시/군/구 좌표) | Kakao | Kakao Developers 이용 약관에 따라 사용 |
 
-공공데이터포털에서 위 두 서비스를 모두 활용신청해야 합니다. (같은 인증키 사용)
+- 보호견 사진은 각 동물보호센터가 국가동물보호정보시스템에 올린 것이고, 앱은 그 주소를 그대로 보여줍니다(사진을 따로 저장하지 않음).
+  '사진으로 찾기'는 이 사진들로 계산한 숫자(임베딩)만 `data` 브랜치에 저장합니다.
+- 공공데이터포털에서 위 두 서비스를 모두 활용신청해야 합니다. (같은 인증키 사용)
+- 시/도청 위치 좌표(`pawmatch/geo.py`의 `REGION_CENTERS`)는 내 위치를 쓰지 않을 때 거리 계산 기준으로 쓰려고 직접 입력한 대략적인 값입니다.
 
 ## 참고자료
 
-- [Streamlit Documentation](https://docs.streamlit.io/)
+- [Streamlit Documentation](https://docs.streamlit.io/): `st.navigation`, `st.dialog`, AppTest(화면 테스트) 등 사용법
 - [streamlit-js-eval](https://github.com/aghasemi/streamlit_js_eval) (MIT License): 브라우저 위치 정보(Geolocation) 가져오기, 찜 목록(localStorage) 읽기에 사용
 - [Material Symbols](https://fonts.google.com/icons) (Google, Apache License 2.0): 하단 탭·버튼 아이콘 (Streamlit 내장)
 - [공공데이터포털](https://www.data.go.kr/)
@@ -335,8 +344,34 @@ GitHub Actions (매시 7분·37분)        Streamlit 앱
 - [Qdrant/clip-ViT-B-32-vision](https://huggingface.co/Qdrant/clip-ViT-B-32-vision) (MIT License): CLIP 이미지 인코더를 ONNX로 변환한 모델 파일
 - [fastembed](https://github.com/qdrant/fastembed) (Apache License 2.0), [ONNX Runtime](https://github.com/microsoft/onnxruntime) (MIT License): 모델 실행
 - 글꼴 [Jua](https://fonts.google.com/specimen/Jua) (Woowahan Brothers), [Gowun Dodum](https://fonts.google.com/specimen/Gowun+Dodum) (Yanghee Ryu): Google Fonts, SIL Open Font License 1.1
-- 본 프로젝트는 AI 코딩 도구(Anthropic Claude)의 도움을 받아 개발했습니다.
+- [하버사인 공식(Haversine formula)](https://en.wikipedia.org/wiki/Haversine_formula): 두 위경도 좌표 사이 거리 계산 (`pawmatch/geo.py`)
+- [Bootstrap "Stretched link"](https://getbootstrap.com/docs/5.3/helpers/stretched-link/) (MIT License): 카드 어디를 눌러도 이동하게 하는 CSS 기법을 참고해 직접 작성 (`views/home.py`)
+- 본 프로젝트는 AI 코딩 도구(Anthropic Claude)의 도움을 받아 개발했습니다. 작업 규칙은 [CLAUDE.md](CLAUDE.md)에 있습니다.
+
+## 오픈소스 라이선스
+
+PawMatch가 사용하는 오픈소스와 그 라이선스입니다. 코드를 복사해 넣은 것은 없고, 모두 패키지로 설치하거나 인터넷 주소로 불러와 씁니다.
+
+| 이름 | 쓰는 곳 | 라이선스 |
+| --- | --- | --- |
+| [Streamlit](https://github.com/streamlit/streamlit) | 웹 앱 전체 | Apache License 2.0 |
+| [streamlit-js-eval](https://github.com/aghasemi/streamlit_js_eval) | 브라우저 위치, 찜 목록(localStorage) 읽기 | MIT License |
+| [Requests](https://github.com/psf/requests) | 공공데이터·카카오 API 호출 | Apache License 2.0 |
+| [python-dotenv](https://github.com/theskumar/python-dotenv) | `.env`에서 API 키 읽기 | BSD 3-Clause |
+| [fastembed](https://github.com/qdrant/fastembed) | CLIP 모델 실행 | Apache License 2.0 |
+| [ONNX Runtime](https://github.com/microsoft/onnxruntime) | CLIP 모델 실행 | MIT License |
+| [NumPy](https://github.com/numpy/numpy) | 사진 임베딩 계산·저장 | BSD 3-Clause |
+| [Pillow](https://github.com/python-pillow/Pillow) | 사진 읽기·크기 줄이기 | MIT-CMU (HPND) |
+| [CLIP](https://github.com/openai/CLIP) (OpenAI) | 사진으로 찾기의 이미지 모델 (ViT-B/32) | MIT License |
+| [Qdrant/clip-ViT-B-32-vision](https://huggingface.co/Qdrant/clip-ViT-B-32-vision) | CLIP 이미지 인코더의 ONNX 변환 모델 파일 | MIT License |
+| [pytest](https://github.com/pytest-dev/pytest) | 테스트 | MIT License |
+| [Playwright](https://github.com/microsoft/playwright) | 앱 깨우기(`scripts/wake_app.py`), 화면 확인 | Apache License 2.0 |
+| GitHub Actions: [checkout](https://github.com/actions/checkout), [setup-python](https://github.com/actions/setup-python), [cache](https://github.com/actions/cache), [upload-artifact](https://github.com/actions/upload-artifact) | 테스트·데이터 갱신·앱 깨우기 워크플로 | MIT License |
+| 글꼴 [Jua](https://fonts.google.com/specimen/Jua), [Gowun Dodum](https://fonts.google.com/specimen/Gowun+Dodum) | 제목·본문 글꼴 (Google Fonts에서 불러옴) | SIL Open Font License 1.1 |
+| [Material Symbols](https://fonts.google.com/icons) | 하단 탭·버튼 아이콘 (Streamlit 내장) | Apache License 2.0 |
 
 ## 라이선스
 
-이 프로젝트는 [MIT License](LICENSE)로 배포됩니다.
+이 프로젝트의 코드는 [MIT License](LICENSE)로 배포됩니다. (Copyright (c) 2026 Cho Yongjun)
+
+위 [오픈소스 라이선스](#오픈소스-라이선스)의 구성 요소와 [데이터 출처](#데이터-출처)의 데이터·사진은 각각의 라이선스와 이용 조건을 따릅니다.

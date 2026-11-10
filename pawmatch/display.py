@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Cho Yongjun
+# SPDX-License-Identifier: MIT
 """API 원문 값을 화면에 보여주기 좋은 문구로 바꾸는 함수들."""
 
 from __future__ import annotations

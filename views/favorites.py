@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Cho Yongjun
+# SPDX-License-Identifier: MIT
 import streamlit as st
 from streamlit_js_eval import streamlit_js_eval
 

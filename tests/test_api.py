@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Cho Yongjun
+# SPDX-License-Identifier: MIT
 """pawmatch.api 단위 테스트 (실제 API는 호출하지 않고 응답을 흉내 냅니다)."""
 
 import pytest

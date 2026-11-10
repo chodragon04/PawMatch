@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Cho Yongjun
+# SPDX-License-Identifier: MIT
 """앱 화면 테스트: 실제 app.py를 Streamlit AppTest로 돌려서, 화면마다 오류 없이 뜨고 주요 동작이 되는지 확인합니다.
 
 브라우저 없이 서버 쪽 코드만 돌리므로 빠르고(몇 초), 네트워크·API 키·이미지 모델 없이 가짜 데이터로 돌아갑니다.

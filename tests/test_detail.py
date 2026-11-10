@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Cho Yongjun
+# SPDX-License-Identifier: MIT
 """상세 정보 창에 쓰는 함수 테스트 (display, ui.carousel_html, detail, geo.ShelterLocator.shelter_info)."""
 
 from pawmatch.detail import kakao_map_link, shelter_contact

@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Cho Yongjun
+# SPDX-License-Identifier: MIT
 """환경 변수 설정을 읽어오는 모듈.
 
 API 키(공공데이터포털, 카카오)는 코드에 직접 쓰지 않고 아래 순서로 찾습니다.

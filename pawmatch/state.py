@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Cho Yongjun
+# SPDX-License-Identifier: MIT
 """여러 화면이 같이 쓰는 화면 상태(st.session_state)의 key.
 
 입력칸에는 persist_state=PERSIST를 주어, 다른 화면에 갔다 와도 값이 남게 합니다.

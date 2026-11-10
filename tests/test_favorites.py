@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Cho Yongjun
+# SPDX-License-Identifier: MIT
 from pawmatch.favorites import MAX_FAVORITES, heart_button_html, parse_favorites
 from pawmatch.ui import carousel_html, photo_html
 

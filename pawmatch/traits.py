@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Cho Yongjun
+# SPDX-License-Identifier: MIT
 """API 원문 값(체중, 나이, 품종, 특징 메모)에서 매칭·검색에 쓸 정보를 뽑아냅니다.
 
 값이 잘못 입력되었거나 알 수 없으면 None을 돌려주고, 점수 계산에서는 '모름'으로 다룹니다.

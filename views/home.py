@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Cho Yongjun
+# SPDX-License-Identifier: MIT
 import streamlit as st
 
 from pawmatch.display import format_updated
@@ -50,6 +52,7 @@ SHORTCUTS = [
     ("views/photo_search.py", ":material/photo_camera:", "사진으로 찾기", "닮은 아이를 사진으로 찾기"),
 ]  # fmt: skip
 # 카드 안의 링크를 카드 전체로 넓혀서, 카드 어디를 눌러도 링크가 눌리게 합니다.
+# (Bootstrap의 'stretched link' 기법을 참고해 직접 작성: https://getbootstrap.com/docs/5.3/helpers/stretched-link/)
 SHORTCUT_CSS = """
 <style>
 [class*="st-key-pm_short_"] { position: relative; gap: 0.1rem !important; }
@@ -92,7 +95,11 @@ with about, st.popover("소개", icon=":material/info:", type="tertiary"):
         "보호소에 있는 유기견을 사진이나 생활 환경을 기준으로 찾아볼 수 있는 웹서비스입니다. "
         "국가동물보호정보시스템의 구조동물 공공데이터를 활용합니다."
     )
-    st.caption(f"국가동물보호정보시스템 {format_updated(data.fetched_at)}")
+    st.caption(
+        "데이터·사진: 농림축산식품부 농림축산검역본부 국가동물보호정보시스템(공공데이터포털), "
+        f"{format_updated(data.fetched_at)}  \n"
+        "소스 코드: [GitHub](https://github.com/chodragon04/PawMatch) · MIT License"
+    )
 st.markdown(f"지금 가족을 기다리는 아이들 **:primary[{len(dogs):,}마리]**")
 
 inject_card_css()

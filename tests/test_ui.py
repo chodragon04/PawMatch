@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Cho Yongjun
+# SPDX-License-Identifier: MIT
 """pawmatch.ui 단위 테스트 (사진 주소 처리, HTML 생성)."""
 
 from pawmatch.ui import PHOTO_FAIL_TITLE, photo_html, photo_urls, shows_cloud_badge

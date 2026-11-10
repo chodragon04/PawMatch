@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Cho Yongjun
+# SPDX-License-Identifier: MIT
 """구조동물 조회 API의 시/도·시/군/구 목록으로 지역 선택 목록(pawmatch/regions.json)을 만듭니다.
 
 행정구역이 바뀌었을 때만 다시 실행하면 됩니다.
