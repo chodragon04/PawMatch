@@ -28,7 +28,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
+      # 쓰기 권한 토큰을 .git/config에 남기지 않습니다. (설치한 패키지 코드가 읽지 못하게, push는 아래에서 토큰을 직접 씀)
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-python@v6
         with:

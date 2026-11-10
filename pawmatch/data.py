@@ -17,6 +17,7 @@ from __future__ import annotations
 import gzip
 import json
 import os
+import sys
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
@@ -196,6 +197,7 @@ class DataStore:
             self.last_error = None
         except Exception as exc:  # 뒤에서 도는 작업이라 실패해도 지금 데이터를 계속 씁니다
             self.last_error = str(exc)
+            print(f"[pawmatch] 데이터 새로 받기 실패, 지금 데이터를 계속 씁니다: {exc}", file=sys.stderr)
         finally:
             with self._lock:
                 self.refreshing = False
