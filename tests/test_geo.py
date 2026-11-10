@@ -60,6 +60,17 @@ def test_group_by_shelter_orders_by_distance_and_skips_unknown():
 
 
 
+def test_group_by_shelter_keeps_same_named_shelters_in_different_cities_apart():
+    from pawmatch.geo import group_by_shelter
+
+    cheongju = {"desertionNo": "c", "careNm": "반려동물보호센터", "careAddr": "충청북도 청주시 흥덕구 1"}
+    yeosu = {"desertionNo": "y", "careNm": "반려동물보호센터", "careAddr": "전남광주통합특별시 여수시 2"}
+    old = {"desertionNo": "o", "careNm": "경동동물병원", "careAddr": "인천광역시 중구 개항로 68 (경동)"}
+    new = {"desertionNo": "n", "careNm": "경동동물병원", "careAddr": "인천광역시 제물포구 개항로 68 (경동)"}
+    groups = group_by_shelter([(cheongju, 1.0), (yeosu, 200.0), (old, 50.0), (new, 50.0)])
+    assert [[d["desertionNo"] for d in g["dogs"]] for g in groups] == [["c"], ["o", "n"], ["y"]]  # 옛·새 주소는 한 곳
+
+
 @pytest.mark.parametrize(
     "address, area, expected",
     [
