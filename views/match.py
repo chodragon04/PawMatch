@@ -29,7 +29,7 @@ def survey_form(max_km: float | None, breeds: list[tuple[str, int]]) -> M.Survey
     """설문을 보여주고, 제출하면 응답을 돌려줍니다."""
     keep = {"persist_state": S.PERSIST}
     with st.form("match_survey_form"):
-        st.markdown("##### 2. 생활 환경")
+        st.markdown("##### 생활 환경")
         home = st.radio(
             "어디에 살고 계신가요?", list(M.HOME_LABELS), format_func=M.HOME_LABELS.get, horizontal=True,
             key=K("home"), **keep,
@@ -55,7 +55,7 @@ def survey_form(max_km: float | None, breeds: list[tuple[str, int]]) -> M.Survey
         # 원하는 조건으로 직접 찾는 건 '보호견 둘러보기'의 역할이라, 여기서는 접어 두는 보조 항목입니다.
         # 고른 조건이 있으면(둘러보기에서 가져온 경우 포함) 펼쳐서 보여줍니다.
         has_prefs = any(st.session_state.get(k) for k in PREF_KEYS)
-        with st.expander("3. 원하는 아이가 따로 있다면 (선택)", expanded=has_prefs):
+        with st.expander("원하는 조건 (선택)", expanded=has_prefs):
             c1, c2 = st.columns(2)
             pref_sizes = c1.pills(
                 "크기", list(T.SIZE_LABELS), selection_mode="multi", format_func=T.SIZE_LABELS.get,
@@ -88,8 +88,8 @@ def render_result(result: M.MatchResult, index: int, locator: ShelterLocator) ->
     with st.container(border=True):
         render_card(result.dog, distance_km=result.distance_km, key_prefix=f"match{index}")
         st.markdown(score_badge(f"적합도 {result.score}점"))
-        lines = [f"👍 {r}" for r in result.reasons[:MAX_REASONS]]
-        lines += [f"⚠️ {c}" for c in result.cautions[:MAX_CAUTIONS]]
+        lines = list(result.reasons[:MAX_REASONS])
+        lines += [f":orange[{c}]" for c in result.cautions[:MAX_CAUTIONS]]  # 확인해 볼 점은 주황 글씨
         if lines:
             st.caption("\n\n".join(lines))
         detail_button(
@@ -103,16 +103,16 @@ def show_more() -> None:
 
 
 page_header("입양 매칭")
-st.write("생활 환경을 알려주면 잘 맞는 아이와 **그 이유**를 알려드려요.")
+st.write("몇 가지 질문에 답하면 생활 환경에 맞는 아이를 추천해요.")
 
 inject_card_css()
 data = load_data_or_stop()
 
 notice = st.session_state.pop(S.MATCH_NOTICE, None)
 if notice:
-    st.success(notice, icon="🐶")
+    st.success(notice)
 
-st.markdown("##### 1. 어디에서 찾을까요?")
+st.markdown("##### 지역")
 origin = pick_origin(S.MATCH)
 distance_label = st.selectbox(
     "보호소까지 거리", list(DISTANCE_OPTIONS), index=0, disabled=origin is None, key=K("distance"),
@@ -149,7 +149,7 @@ st.subheader(f"나와 잘 맞는 아이 {limit}마리")
 if survey.breeds:
     st.caption("품종: " + ", ".join(survey.breeds))
 st.caption(
-    "점수는 공공데이터로 계산한 참고용이에요. 성격과 건강은 꼭 보호소에 물어봐 주세요."
+    "점수는 참고용이에요. 성격과 건강은 보호소에 확인해 주세요."
     + ("" if origin is not None else " 위치를 정하면 거리 점수도 더해져요.")
 )
 
@@ -164,7 +164,7 @@ if limit < len(results):
     st.button("추천 더 보기", on_click=show_more, width="stretch")
 
 with st.container(border=True):
-    st.markdown("**보호견 둘러보기**에서 조건을 좁혀 가며 **나와 잘 맞는 순**으로 볼 수도 있어요.")
+    st.markdown("보호견 둘러보기에서 조건을 좁혀 가며 나와 잘 맞는 순으로 볼 수도 있어요.")
     if st.button("둘러보기에서 나와 잘 맞는 순으로 보기", icon=":material/pets:"):
         st.session_state[S.BROWSE_ORDER] = B.FIT
         st.session_state.pop(S.BROWSE_LIMIT, None)  # 둘러보기는 처음 개수부터

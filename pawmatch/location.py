@@ -111,7 +111,7 @@ def pick_origin(key: str = "origin") -> tuple[float, float] | None:
         minutes = int(age // 60)
         when = "방금" if minutes < 1 else f"{minutes}분 전에"
         col_text, col_button = st.columns([3, 1], vertical_alignment="center")
-        col_text.caption(f"{when} 받은 내 위치예요. (저장하지 않아요)")
+        col_text.caption(f"{when} 받은 내 위치 기준이에요.")
         col_button.button(
             "다시 가져오기", key=f"{key}_relocate", on_click=forget_location, width="stretch",
             help="위치는 30분 동안 기억해서 권한을 다시 묻지 않아요.",

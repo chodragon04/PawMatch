@@ -148,12 +148,12 @@ if st.session_state.get(f"{KEY}order") not in sort_options:
 
 with st.container(border=True):
     if survey is None:
-        st.markdown("설문에 답하면 **나와 잘 맞는 순**으로도 볼 수 있어요.")
+        st.markdown("입양 매칭 질문에 답하면 나와 잘 맞는 순으로도 볼 수 있어요.")
     else:
         sorted_by_fit = st.session_state.get(f"{KEY}order") == B.FIT
         st.markdown(
-            "설문 답변으로 **적합도**를 계산했어요."
-            + ("" if sorted_by_fit else " 정렬을 **나와 잘 맞는 순**으로 바꿔 보세요.")
+            "입양 매칭 답변으로 적합도를 계산했어요."
+            + ("" if sorted_by_fit else " 정렬을 나와 잘 맞는 순으로 바꿔 보세요.")
         )
     if st.button(
         "이 조건으로 입양 매칭 하기", icon=":material/volunteer_activism:",

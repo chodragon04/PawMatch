@@ -56,8 +56,7 @@ def embed_photo(data: bytes):
 
 
 page_header("사진으로 찾기")
-st.write("사진 속 강아지와 **닮은 보호견**을 찾아드려요.")
-st.caption("올린 사진은 저장하지 않아요.")
+st.write("사진 속 강아지와 닮은 보호견을 찾아요.")
 
 inject_card_css()
 data = load_data_or_stop()
@@ -70,7 +69,7 @@ with st.container(border=True):
     upload_tab, camera_tab = st.tabs([":material/image: 사진 올리기", ":material/photo_camera: 카메라로 찍기"])
     uploaded = upload_tab.file_uploader(
         "강아지 사진", type=UPLOAD_TYPES, key="photo_upload", label_visibility="collapsed",
-        help="강아지 얼굴과 몸이 잘 보이는 사진일수록 잘 찾아요.",
+        help="강아지 얼굴과 몸이 잘 보이는 사진일수록 잘 찾아요. 올린 사진은 저장하지 않아요.",
     )  # fmt: skip
     taken = None
     with camera_tab:

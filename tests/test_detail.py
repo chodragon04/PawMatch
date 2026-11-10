@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 """상세 정보 창에 쓰는 함수 테스트 (display, ui.carousel_html, detail, geo.ShelterLocator.shelter_info)."""
 
-from pawmatch.detail import kakao_map_link, shelter_contact
+from pawmatch.detail import facts_html, kakao_map_link, shelter_contact
 from pawmatch.display import dog_facts, format_neuter, format_shelter_hours, format_weight, format_ymd
 from pawmatch.geo import ShelterLocator
 from pawmatch.ui import carousel_html
@@ -71,3 +71,9 @@ def test_carousel_has_every_photo_and_escapes():
 def test_carousel_without_photos_shows_message():
     out = carousel_html({}, "c2")
     assert "pm-failed" in out and "사진을 불러오지 못했어요" in out and 'class="pm-slide"' not in out
+
+
+def test_facts_html_escapes_values():
+    out = facts_html([("털색", "<b>갈색</b>"), ("나이", "2023년생")])
+    assert "<dt>털색</dt><dd>&lt;b&gt;갈색&lt;/b&gt;</dd>" in out
+    assert "<dt>나이</dt><dd>2023년생</dd>" in out

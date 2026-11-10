@@ -15,6 +15,7 @@ from pawmatch.config import get_api_key
 from pawmatch.data import STORE, WARN_AFTER, Dataset
 from pawmatch.display import adoption_status, format_age, format_sex, format_updated, photo_urls, status_badge
 from pawmatch.favorites import FAVORITE_CSS, FAVORITE_JS, PAINT_JS, heart_button_html
+from pawmatch.matching import breed_name
 
 PHOTO_FAIL_TITLE = "사진을 불러오지 못했어요"
 PHOTO_FAIL_DETAIL = "보호소에 문의하면 아이의 모습을 확인할 수 있어요"
@@ -62,7 +63,7 @@ def photo_html(dog: dict, element_id: str) -> str:
     """사진 영역 HTML. 사진이 없거나 모두 깨지면 안내 문구가 보입니다."""
     urls = photo_urls(dog)
     fail = (
-        f'<div class="pm-fail"><span>🐾</span><b>{PHOTO_FAIL_TITLE}</b>'
+        f'<div class="pm-fail"><b>{PHOTO_FAIL_TITLE}</b>'
         f"<small>{PHOTO_FAIL_DETAIL}</small></div>"
     )
     eid = html.escape(element_id, quote=True)
@@ -181,7 +182,7 @@ def carousel_html(dog: dict, element_id: str) -> str:
     urls = photo_urls(dog)
     eid = html.escape(element_id, quote=True)
     alt = html.escape(dog.get("kindFullNm") or dog.get("kindNm") or "보호 중인 강아지", quote=True)
-    fail = f'<div class="pm-fail"><span>🐾</span><b>{PHOTO_FAIL_TITLE}</b><small>{PHOTO_FAIL_DETAIL}</small></div>'
+    fail = f'<div class="pm-fail"><b>{PHOTO_FAIL_TITLE}</b><small>{PHOTO_FAIL_DETAIL}</small></div>'
     # 상세 창에도 하트(찜) 버튼. 창은 카드와 따로 그려질 수 있어 하트 동작 코드도 같이 넣습니다(한 번만 등록됨).
     dog_id = dog.get("desertionNo")
     heart = (FAVORITE_CSS + heart_button_html(dog_id) + FAVORITE_JS + PAINT_JS) if dog_id else ""
@@ -284,7 +285,7 @@ def render_card(
 ) -> None:
     element_id = f"{key_prefix}-photo-{dog.get('desertionNo') or id(dog)}"
     st.html(photo_html(dog, element_id), unsafe_allow_javascript=True)
-    st.markdown(f"**{dog.get('kindFullNm') or dog.get('kindNm') or '품종 미상'}**")
+    st.markdown(f"**{breed_name(dog)}**")
     lines = [f"{format_age(dog.get('age'))} · {format_sex(dog.get('sexCd'))}"]
     if show_shelter:
         shelter = dog.get("careNm", "")
