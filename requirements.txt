@@ -1,6 +1,8 @@
-streamlit>=1.66
+# 하단 탭·하트 버튼 CSS가 Streamlit 화면 구조에 맞춰져 있어서, 확인한 버전으로 고정합니다.
+# 올릴 때는 휴대폰 크기 화면(하단 탭, 하트, 홈 카드)을 다시 확인한 뒤 바꿔 주세요.
+streamlit==1.67.0
+streamlit-js-eval==1.0.0
 requests>=2.31
 pandas>=2.2
 python-dotenv>=1.0
-streamlit-js-eval>=1.0
 fastembed>=0.9,<1
