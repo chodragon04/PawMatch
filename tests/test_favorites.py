@@ -1,5 +1,5 @@
 from pawmatch.favorites import MAX_FAVORITES, heart_button_html, parse_favorites
-from pawmatch.ui import photo_html
+from pawmatch.ui import carousel_html, photo_html
 
 
 def test_parse_favorites_keeps_order_and_drops_duplicates():
@@ -29,3 +29,8 @@ def test_card_photo_has_heart_even_without_photos():
     assert 'data-pm-fav="123"' in photo_html({"desertionNo": "123"}, "x")
     assert 'data-pm-fav="123"' in photo_html({"desertionNo": "123", "popfile1": "https://a/b.jpg"}, "y")
     assert "pm-fav" not in photo_html({}, "z")
+
+
+def test_detail_carousel_has_heart():
+    assert 'data-pm-fav="123"' in carousel_html({"desertionNo": "123", "popfile1": "https://a/b.jpg"}, "d")
+    assert 'data-pm-fav="123"' in carousel_html({"desertionNo": "123"}, "e")  # 사진이 없어도 찜은 가능

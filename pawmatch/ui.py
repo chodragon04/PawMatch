@@ -180,8 +180,11 @@ def carousel_html(dog: dict, element_id: str) -> str:
     eid = html.escape(element_id, quote=True)
     alt = html.escape(dog.get("kindFullNm") or dog.get("kindNm") or "보호 중인 강아지", quote=True)
     fail = f'<div class="pm-fail"><span>🐾</span><b>{PHOTO_FAIL_TITLE}</b><small>{PHOTO_FAIL_DETAIL}</small></div>'
+    # 상세 창에도 하트(찜) 버튼. 창은 카드와 따로 그려질 수 있어 하트 동작 코드도 같이 넣습니다(한 번만 등록됨).
+    dog_id = dog.get("desertionNo")
+    heart = (FAVORITE_CSS + heart_button_html(dog_id) + FAVORITE_JS + PAINT_JS) if dog_id else ""
     if not urls:
-        return f'{CAROUSEL_CSS}<div class="pm-carousel pm-failed" id="{eid}"><div class="pm-stage">{fail}</div></div>'
+        return f'{CAROUSEL_CSS}<div class="pm-carousel pm-failed" id="{eid}"><div class="pm-stage">{fail}{heart}</div></div>'
 
     slides = "".join(
         f'<img class="pm-slide" src="{html.escape(u, quote=True)}" alt="{alt} 사진 {i + 1}" '
@@ -196,7 +199,7 @@ def carousel_html(dog: dict, element_id: str) -> str:
         f'<div class="pm-stage">{slides}{fail}'
         f'<button type="button" class="pm-nav pm-prev" aria-label="이전 사진">‹</button>'
         f'<button type="button" class="pm-nav pm-next" aria-label="다음 사진">›</button>'
-        f'<span class="pm-count"></span></div>'
+        f'<span class="pm-count"></span>{heart}</div>'
         f'<div class="pm-thumbs">{thumbs}</div></div>'
         f"{_CAROUSEL_JS % {'id': json.dumps(element_id)}}"
     )

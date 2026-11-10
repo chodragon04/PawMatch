@@ -112,7 +112,7 @@ def filter_controls(dogs: list[dict]) -> B.BrowseFilter:
         counts = dict(breeds)
         chosen_breeds = st.multiselect(
             "품종", [name for name, _ in breeds], format_func=lambda name: f"{name} ({counts[name]:,})",
-            placeholder="모든 품종", key=f"{KEY}breeds", on_change=reset_page, **KEEP,
+            placeholder="모든 품종", key=f"{KEY}breeds", on_change=reset_page, select_all=False, **KEEP,
         )  # fmt: skip
 
         st.button("조건 초기화", on_click=reset_filters, type="tertiary", icon=":material/restart_alt:")

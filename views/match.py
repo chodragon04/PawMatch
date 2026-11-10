@@ -69,7 +69,7 @@ def survey_form(max_km: float | None, breeds: list[tuple[str, int]]) -> M.Survey
                 "품종", [name for name, _ in breeds], format_func=lambda name: f"{name} ({counts.get(name, 0):,})",
                 placeholder="모든 품종 (여러 개 고를 수 있어요)",
                 help="품종을 고르면 그 품종의 아이만 추천해요. 괄호 안은 지금 보호 중인 마릿수예요.",
-                key=K("breeds"), **keep,
+                key=K("breeds"), select_all=False, **keep,
             )  # fmt: skip
             st.caption("안 고르면 상관없음 · 여러 개를 고르면 하나만 맞아도 돼요")
 
