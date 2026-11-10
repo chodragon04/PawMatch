@@ -141,7 +141,7 @@ PawMatch/
 │   ├── update-data.yml  # 30분마다 데이터·사진 임베딩 갱신
 │   ├── test.yml         # PR·main 반영 때마다 테스트 자동 실행
 │   └── keep-awake.yml   # 3시간마다 배포된 앱을 열어 잠들지 않게 함
-├── tests/               # 단위 테스트 (pytest)
+├── tests/               # 단위 테스트 + 화면 테스트 (pytest, test_app_pages.py는 앱 전체를 가짜 데이터로 실행)
 ├── data/                # 데이터 캐시 (Git에 올리지 않음)
 ├── docs/
 │   ├── data-analysis.md # 공공데이터 필드 분석 (채워진 비율, 매칭에 쓸 정보)
@@ -204,6 +204,9 @@ PawMatch/
    ```
 
    테스트는 실제 API·모델 없이 가짜 응답으로 돌아가서 API 키가 필요 없습니다.
+   `tests/test_app_pages.py`는 Streamlit의 [AppTest](https://docs.streamlit.io/develop/api-reference/app-testing)로
+   실제 `app.py`를 가짜 데이터로 실행해, 홈·둘러보기·입양 매칭·사진으로 찾기·찜 화면이 오류 없이 뜨고
+   지역 고르기, 설문 제출 같은 주요 동작이 되는지 확인합니다(브라우저 없이 몇 초).
    GitHub에서는 PR을 올리거나 main에 반영될 때마다 자동으로 돌아갑니다(`.github/workflows/test.yml`).
 
 ## 배포 (Streamlit Community Cloud)
