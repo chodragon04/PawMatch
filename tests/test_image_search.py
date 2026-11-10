@@ -108,5 +108,13 @@ def test_load_image_fixes_rotation_and_shrinks():
     assert loaded.size == (256, 512) and loaded.mode == "RGB"
 
 
+def test_load_image_reads_big_jpeg_small():
+    """큰 JPEG는 처음부터 줄여 읽어서(draft) 원본 크기 메모리를 쓰지 않고, 결과는 MAX_IMAGE_SIDE 이하."""
+    buf = io.BytesIO()
+    Image.new("RGB", (6000, 4000), "orange").save(buf, "JPEG")
+    loaded = I.load_image(buf.getvalue())
+    assert max(loaded.size) == I.MAX_IMAGE_SIDE and loaded.mode == "RGB"
+
+
 def test_empty_index_search():
     assert I.empty_index().search(np.ones(I.DIM)) == []
