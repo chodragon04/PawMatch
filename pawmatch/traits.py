@@ -10,6 +10,8 @@ import re
 from dataclasses import dataclass, field
 from datetime import date
 
+from pawmatch.display import today_kst
+
 # ---------------------------------------------------------------- 체중 / 크기
 
 SMALL, MEDIUM, LARGE = "small", "medium", "large"
@@ -100,7 +102,7 @@ def age_years(raw: str | None, today: date | None = None) -> int | None:
     year = birth_year(raw)
     if year is None:
         return None
-    age = (today or date.today()).year - year
+    age = (today or today_kst()).year - year
     return age if 0 <= age <= 30 else None
 
 

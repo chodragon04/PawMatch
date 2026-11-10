@@ -9,7 +9,7 @@ from dataclasses import dataclass, replace
 from datetime import date
 
 from pawmatch import traits as T
-from pawmatch.display import parse_ymd
+from pawmatch.display import parse_ymd, today_kst
 from pawmatch.geo import address_in_area
 from pawmatch.matching import MatchResult, Survey, breed_name, score_dog
 
@@ -49,7 +49,7 @@ def notice_status(dog: dict, today: date | None = None) -> str | None:
     end = parse_ymd(dog.get("noticeEdt"))
     if end is None:
         return None
-    return NOTICE if end >= (today or date.today()) else ADOPTABLE
+    return NOTICE if end >= (today or today_kst()) else ADOPTABLE
 
 
 def _keyword_match(dog: dict, keyword: str) -> bool:
@@ -80,7 +80,7 @@ def matches(dog: dict, f: BrowseFilter, today: date | None = None) -> bool:
 
 
 def filter_dogs(dogs: list[dict], f: BrowseFilter, today: date | None = None) -> list[dict]:
-    today = today or date.today()
+    today = today or today_kst()
     return [dog for dog in dogs if matches(dog, f, today)]
 
 
@@ -108,7 +108,7 @@ def sort_dogs(
     - 오래 기다린 순: 구조된 날이 오래된 아이부터
     - 나와 잘 맞는 순: 입양 매칭 설문 적합도가 높은 아이부터 (fits 필요, 같으면 최근 등록순)
     """
-    today = today or date.today()
+    today = today or today_kst()
     if order == FIT and fits:
         recent = sort_dogs(dogs, RECENT, today)
         return sorted(recent, key=lambda d: -fits[str(d.get("desertionNo"))].score)

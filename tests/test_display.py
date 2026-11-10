@@ -1,9 +1,10 @@
 """pawmatch.display 단위 테스트."""
 
-from datetime import date
+from datetime import date, datetime, timezone
 
 import pytest
 
+from pawmatch import display
 from pawmatch.api import dedupe_by_id
 from pawmatch.display import adoption_status, format_age, format_sex, parse_ymd
 
@@ -71,3 +72,16 @@ def test_badges():
     assert status_badge("입양 가능") == ":green-badge[입양 가능]"
     assert status_badge("공고 중 · 11/12까지") == ":gray-badge[공고 중 · 11/12까지]"
     assert score_badge("적합도 90점") == ":primary-badge[적합도 90점]"
+
+
+def test_today_is_korean_date_even_on_utc_server(monkeypatch):
+    """UTC 11월 10일 20시는 한국 11월 11일 05시: 어제 끝난 공고가 '공고 중'으로 보이면 안 됩니다."""
+
+    class FixedNow(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return datetime(2026, 11, 10, 20, 0, tzinfo=timezone.utc).astimezone(tz)
+
+    monkeypatch.setattr(display, "datetime", FixedNow)
+    assert display.today_kst() == date(2026, 11, 11)
+    assert adoption_status("20261110") == "입양 가능"
