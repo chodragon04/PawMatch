@@ -11,9 +11,8 @@ from urllib.parse import quote
 
 import streamlit as st
 
-from pawmatch.display import adoption_status, dog_facts, format_shelter_hours, score_badge, status_badge
+from pawmatch.display import adoption_status, dog_facts, format_breed, format_shelter_hours, score_badge, status_badge
 from pawmatch.geo import ShelterLocator
-from pawmatch.matching import breed_name
 from pawmatch.ui import carousel_html, render_card
 
 MASKED_TEL_RE = re.compile(r"^\*+$")
@@ -101,7 +100,7 @@ def render_dog_detail(
 
 def open_detail(dog: dict, shelter: dict | None = None, **detail_kwargs) -> None:
     """유기견 상세 정보를 모달 창으로 엽니다. detail_kwargs는 render_dog_detail에 그대로 넘깁니다."""
-    title = breed_name(dog)
+    title = format_breed(dog)
 
     @st.dialog(title, width="large")
     def _dialog() -> None:

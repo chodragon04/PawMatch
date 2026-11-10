@@ -8,7 +8,7 @@ import pytest
 
 from pawmatch import display
 from pawmatch.api import dedupe_by_id
-from pawmatch.display import adoption_status, format_age, format_sex, parse_ymd
+from pawmatch.display import adoption_status, format_age, format_breed, format_sex, parse_ymd
 
 
 @pytest.mark.parametrize(
@@ -87,3 +87,9 @@ def test_today_is_korean_date_even_on_utc_server(monkeypatch):
     monkeypatch.setattr(display, "datetime", FixedNow)
     assert display.today_kst() == date(2026, 11, 11)
     assert adoption_status("20261110") == "입양 가능"
+
+
+def test_format_breed_prefers_full_name_over_generic_kind():
+    assert format_breed({"kindNm": "기타", "kindFullNm": "[개] 말티푸"}) == "말티푸"
+    assert format_breed({"kindNm": "믹스견"}) == "믹스견"
+    assert format_breed({}) == "품종 미상"

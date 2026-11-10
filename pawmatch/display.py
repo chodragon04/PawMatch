@@ -26,6 +26,12 @@ def format_age(raw: str | None) -> str:
     return f"{year}년생"
 
 
+def format_breed(dog: dict) -> str:
+    """화면에 보여줄 품종: '[개] 말티푸' -> '말티푸'. kindNm은 '기타'로 뭉뚱그려진 경우가 있어 kindFullNm을 먼저 씁니다."""
+    full = (dog.get("kindFullNm") or "").replace("[개]", "").strip()
+    return full or (dog.get("kindNm") or "").strip() or "품종 미상"
+
+
 def format_sex(code: str | None) -> str:
     return SEX_LABELS.get((code or "").upper(), "성별 미상")
 
