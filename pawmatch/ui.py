@@ -13,9 +13,8 @@ import streamlit as st
 from pawmatch.api import ApiError
 from pawmatch.config import get_api_key
 from pawmatch.data import STORE, WARN_AFTER, Dataset
-from pawmatch.display import adoption_status, format_age, format_sex, format_updated, photo_urls, status_badge
+from pawmatch.display import adoption_status, format_age, format_breed, format_sex, format_updated, photo_urls, status_badge
 from pawmatch.favorites import FAVORITE_CSS, FAVORITE_JS, PAINT_JS, heart_button_html
-from pawmatch.matching import breed_name
 
 PHOTO_FAIL_TITLE = "사진을 불러오지 못했어요"
 PHOTO_FAIL_DETAIL = "보호소에 문의하면 아이의 모습을 확인할 수 있어요"
@@ -285,7 +284,7 @@ def render_card(
 ) -> None:
     element_id = f"{key_prefix}-photo-{dog.get('desertionNo') or id(dog)}"
     st.html(photo_html(dog, element_id), unsafe_allow_javascript=True)
-    st.markdown(f"**{breed_name(dog)}**")
+    st.markdown(f"**{format_breed(dog)}**")
     lines = [f"{format_age(dog.get('age'))} · {format_sex(dog.get('sexCd'))}"]
     if show_shelter:
         shelter = dog.get("careNm", "")
