@@ -108,8 +108,11 @@ SIDO_ALIASES = {
 
 # 2026년 인천 행정체제 개편 전 주소: 동 이름으로 새 구를 정합니다.
 # (중구 영종도 지역 → 영종구, 나머지 중구·동구 → 제물포구 / 서구 검단 지역 → 검단구, 나머지 서구 → 서해구)
+# 도로명 주소 끝 괄호 안의 동 이름('(운남동)')을 먼저 보고, 괄호에 동 이름이 없으면 주소 전체에서 찾습니다.
+# (도로 이름에 다른 지역 이름이 들어 있어도 실제 동으로 판단하기 위해서)
+# 영종도 안의 도로는 '공항로', '공항동로'처럼 이름에 '공항'이 들어가서 괄호가 없어도 영종구로 봅니다.
 _INCHEON_LEGACY = {
-    "중구": (("운서", "운남", "운북", "중산", "영종", "용유", "을왕", "남북동", "덕교", "무의"), "영종구", "제물포구"),
+    "중구": (("운서", "운남", "운북", "중산", "영종", "용유", "을왕", "남북동", "덕교", "무의", "공항"), "영종구", "제물포구"),
     "동구": ((), "", "제물포구"),
     "서구": (("검단", "마전", "당하", "원당", "불로", "대곡", "오류", "왕길", "금곡", "아라"), "검단구", "서해구"),
 }  # fmt: skip
@@ -118,7 +121,10 @@ _INCHEON_LEGACY = {
 def _current_sigungu(sido: str, sigungu: str, address: str) -> str:
     if sido == "인천광역시" and sigungu in _INCHEON_LEGACY:
         keywords, matched, default = _INCHEON_LEGACY[sigungu]
-        return matched if any(k in address for k in keywords) else default
+        inside = re.search(r"\(([^)]*)\)", address)  # 도로명 주소 끝의 '(운남동)', '(경동, ...)'
+        dongs = re.findall(r"[가-힣0-9]+동", inside.group(1)) if inside else []
+        where = " ".join(dongs) if dongs else address  # 괄호에 동 이름이 없으면('(2층)') 주소 전체에서 찾기
+        return matched if any(k in where for k in keywords) else default
     return sigungu
 
 
