@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Cho Yongjun
+# SPDX-License-Identifier: MIT
 """scripts/fetch_data.py 테스트: 공공데이터 API가 잠깐 응답하지 않을 때의 동작."""
 
 import importlib.util

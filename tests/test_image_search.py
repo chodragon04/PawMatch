@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Cho Yongjun
+# SPDX-License-Identifier: MIT
 """pawmatch.image_search 테스트. 실제 CLIP 모델 대신 '사진 색 → 벡터' 가짜 임베딩으로 흐름을 확인합니다."""
 
 import io

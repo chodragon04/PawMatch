@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Cho Yongjun
+# SPDX-License-Identifier: MIT
 """여러 페이지에서 같이 쓰는 화면 구성 요소 (유기견 카드 등)."""
 
 from __future__ import annotations

@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Cho Yongjun
+# SPDX-License-Identifier: MIT
 """국가동물보호정보시스템 공공데이터포털 API 클라이언트.
 
 - 구조동물 조회 서비스: 보호소에 있는 유기동물 목록

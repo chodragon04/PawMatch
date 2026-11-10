@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Cho Yongjun
+# SPDX-License-Identifier: MIT
 """사진으로 찾기: 사전학습 이미지 모델(CLIP)로 생김새가 비슷한 보호견을 찾습니다.
 
 - 모델: OpenAI CLIP ViT-B/32 이미지 인코더 (MIT License)를 Qdrant가 ONNX로 변환한 것

@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Cho Yongjun
+# SPDX-License-Identifier: MIT
 """설문(주거 환경, 산책 시간 등)과 보호견 정보로 적합도 점수를 계산합니다.
 
 항목별 점수(0~1)에 비중을 곱해 100점 만점으로 합칩니다.

@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Cho Yongjun
+# SPDX-License-Identifier: MIT
 """pawmatch.geo 단위 테스트."""
 
 import pytest

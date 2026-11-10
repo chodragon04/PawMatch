@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Cho Yongjun
+# SPDX-License-Identifier: MIT
 """지역 목록(pawmatch.regions, scripts/build_regions.py)과 카카오 위치 찾기(pawmatch.kakao) 테스트."""
 
 import importlib.util

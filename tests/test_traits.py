@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Cho Yongjun
+# SPDX-License-Identifier: MIT
 """pawmatch.traits 단위 테스트 (실데이터에서 본 값들로 확인)."""
 
 from datetime import date

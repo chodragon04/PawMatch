@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Cho Yongjun
+# SPDX-License-Identifier: MIT
 """PawMatch Streamlit 앱 진입점.
 
 실행: streamlit run app.py

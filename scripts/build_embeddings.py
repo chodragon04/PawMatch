@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Cho Yongjun
+# SPDX-License-Identifier: MIT
 """보호견 사진 임베딩(embeddings.npz)을 만듭니다. GitHub Actions에서 데이터 스냅샷을 만든 뒤 실행합니다.
 
     python scripts/build_embeddings.py --snapshot out/snapshot.json.gz --out out

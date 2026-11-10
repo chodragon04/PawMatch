@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Cho Yongjun
+# SPDX-License-Identifier: MIT
 """pawmatch.data 단위 테스트 (스냅샷 읽기/쓰기, 불러오는 순서)."""
 
 from datetime import datetime, timedelta, timezone

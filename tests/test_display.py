@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Cho Yongjun
+# SPDX-License-Identifier: MIT
 """pawmatch.display 단위 테스트."""
 
 from datetime import date, datetime, timezone

@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Cho Yongjun
+# SPDX-License-Identifier: MIT
 """지역 선택 목록: 시/도 → 시/군/구.
 
 목록(regions.json)은 구조동물 조회 API의 시/도·시/군/구 조회 결과를 정리한 것입니다.

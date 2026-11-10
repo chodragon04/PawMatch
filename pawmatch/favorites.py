@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Cho Yongjun
+# SPDX-License-Identifier: MIT
 """찜하기: 찜한 아이 목록을 사용자의 브라우저(localStorage)에만 저장합니다. 서버에는 저장하지 않습니다.
 
 - 카드 사진 왼쪽 아래의 하트 버튼은 브라우저에서 바로 localStorage를 바꿉니다. (서버를 거치지 않아 빠름)

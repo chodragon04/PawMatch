@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Cho Yongjun
+# SPDX-License-Identifier: MIT
 """pawmatch.browse 단위 테스트 (조건 거르기, 정렬)."""
 
 from datetime import date

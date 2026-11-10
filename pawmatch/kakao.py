@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Cho Yongjun
+# SPDX-License-Identifier: MIT
 """카카오 로컬 API로 시/군/구의 위치(위도, 경도)를 찾습니다.
 
 시/군/구를 고르면 그 지역 중심 좌표를 기준으로 가까운 보호소를 찾기 위해 씁니다.
