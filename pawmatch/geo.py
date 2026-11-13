@@ -39,14 +39,6 @@ def haversine_km(a: tuple[float, float], b: tuple[float, float]) -> float:
     return 2 * EARTH_RADIUS_KM * math.asin(math.sqrt(h))
 
 
-def _to_float(value) -> float | None:
-    try:
-        f = float(value)
-    except (TypeError, ValueError):
-        return None
-    return f if math.isfinite(f) and f != 0 else None
-
-
 def _normalize_name(name: str | None) -> str:
     return re.sub(r"[\s()（）]", "", name or "")
 
@@ -55,6 +47,10 @@ class ShelterLocator:
     """유기견 정보에서 보호소 좌표를 찾습니다. (보호소 번호 → 보호소 이름 순으로 매칭)"""
 
     def __init__(self, shelters: list[dict]):
+        # 좌표: 주소와 안 맞아 고친 좌표(shelter_coords.json) → API 좌표. 0,0처럼 한국 밖 좌표는 없는 것으로 봅니다.
+        # (shelter_coords가 이 모듈을 불러 쓰므로, 서로 부르지 않게 여기서 불러옵니다)
+        from pawmatch.shelter_coords import shelter_coords
+
         self.by_reg_no: dict[str, tuple[float, float]] = {}
         self.by_name: dict[str, tuple[float, float]] = {}
         self.records_by_reg_no: dict[str, dict] = {}
@@ -64,13 +60,13 @@ class ShelterLocator:
                 self.records_by_reg_no.setdefault(str(s["careRegNo"]), s)
             if s.get("careNm"):
                 self.records_by_name.setdefault(_normalize_name(s["careNm"]), s)
-            lat, lng = _to_float(s.get("lat")), _to_float(s.get("lng"))
-            if lat is None or lng is None:
+            pos = shelter_coords(s)
+            if pos is None:
                 continue
             if s.get("careRegNo"):
-                self.by_reg_no[str(s["careRegNo"])] = (lat, lng)
+                self.by_reg_no[str(s["careRegNo"])] = pos
             if s.get("careNm"):
-                self.by_name[_normalize_name(s["careNm"])] = (lat, lng)
+                self.by_name[_normalize_name(s["careNm"])] = pos
 
     def locate(self, dog: dict) -> tuple[float, float] | None:
         reg_no = dog.get("careRegNo")

@@ -59,3 +59,48 @@ def geocode_region(sido: str, sigungu: str, api_key: str, timeout: float = 5) ->
         if found:
             return found
     return None
+
+
+# ---------------------------------------------------------------- 보호소 좌표 확인용 (scripts/check_shelter_coords.py)
+
+KEYWORD_SEARCH_URL = "https://dapi.kakao.com/v2/local/search/keyword.json"
+
+
+class KakaoError(Exception):
+    """카카오 API가 정상 응답을 주지 않았을 때 (키 오류, 사용량 초과 등)."""
+
+
+def _get_documents(url: str, query: str, api_key: str, timeout: float) -> list[dict]:
+    try:
+        resp = requests.get(url, params={"query": query}, headers={"Authorization": f"KakaoAK {api_key}"}, timeout=timeout)
+    except requests.RequestException as exc:
+        raise KakaoError(f"카카오 API에 연결하지 못했습니다 ({type(exc).__name__})") from None
+    if resp.status_code != 200:
+        raise KakaoError(f"카카오 API 응답 오류 (HTTP {resp.status_code})")
+    try:
+        return resp.json().get("documents") or []
+    except ValueError:
+        raise KakaoError("카카오 API가 예상하지 못한 응답을 보냈습니다") from None
+
+
+def geocode_address(address: str, api_key: str, timeout: float = 5) -> tuple[float, float, str] | None:
+    """주소 → (위도, 경도, 카카오가 찾은 주소). 찾지 못하면 None."""
+    for doc in _get_documents(ADDRESS_SEARCH_URL, address, api_key, timeout):
+        try:
+            return float(doc["y"]), float(doc["x"]), doc.get("address_name") or ""
+        except (KeyError, TypeError, ValueError):
+            continue
+    return None
+
+
+def search_place(query: str, must_contain: str, api_key: str, timeout: float = 5) -> tuple[float, float, str] | None:
+    """장소 이름 검색 → (위도, 경도, 장소 주소). 주소에 must_contain(시/군/구)이 들어간 첫 결과만 씁니다."""
+    for doc in _get_documents(KEYWORD_SEARCH_URL, query, api_key, timeout):
+        address = doc.get("address_name") or doc.get("road_address_name") or ""
+        if must_contain and must_contain not in address:
+            continue
+        try:
+            return float(doc["y"]), float(doc["x"]), f"{doc.get('place_name', '')} ({address})"
+        except (KeyError, TypeError, ValueError):
+            continue
+    return None

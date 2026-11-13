@@ -124,7 +124,8 @@ PawMatch/
 │   ├── data.py          # 데이터 불러오기 (스냅샷 → API 순서)
 │   ├── geo.py           # 거리 계산, 가까운 보호소 순 정렬, 시/도청 좌표
 │   ├── regions.py       # 지역 선택 목록 (regions.json: 시/도 16곳, 시/군/구 229곳)
-│   ├── kakao.py         # 카카오 로컬 API로 시/군/구 위치 찾기
+│   ├── kakao.py         # 카카오 로컬 API로 시/군/구·주소 위치 찾기
+│   ├── shelter_coords.py # 주소와 안 맞는 보호소 좌표 바로잡기 (shelter_coords.json 적용)
 │   ├── location.py      # 기준 위치 고르기 (내 위치 / 시·도 선택)
 │   ├── state.py         # 여러 화면이 같이 쓰는 화면 상태 key (입력값 유지)
 │   ├── traits.py        # 체중·나이·품종·특징 메모에서 크기·활동량·성격 추출
@@ -137,6 +138,7 @@ PawMatch/
 │   └── image_search.py  # 사진으로 찾기: CLIP 임베딩 만들기·저장·유사도 검색
 ├── scripts/
 │   ├── fetch_data.py    # 데이터 받아서 스냅샷 파일로 저장 (GitHub Actions에서 실행)
+│   ├── check_shelter_coords.py # 보호소 주소를 카카오로 찾아 좌표 확인 (2026년 11월에 한 번 실행)
 │   ├── build_embeddings.py # 보호견 사진 임베딩 만들기 (GitHub Actions에서 실행)
 │   ├── build_regions.py # 구조동물 API의 시/도·시/군/구 목록으로 regions.json 생성
 │   └── wake_app.py      # 배포된 앱을 브라우저로 열어 깨우기 (GitHub Actions에서 실행)
@@ -302,6 +304,12 @@ GitHub Actions (매시 7분·37분)        Streamlit 앱
   그 지역의 좌표를 찾습니다(7일 캐시). 카카오 주소 데이터가 새 이름을 모르면 통합·명칭 변경 전 이름(광주광역시, 전라남도 등)으로 다시 찾습니다.
 - 홈에서 지역을 고르면 **주소가 그 지역 안인 보호소를 먼저**(가까운 순), 그다음 나머지 보호소를 가까운 순으로 보여줍니다.
   보호소 주소의 옛 이름·줄임말(강원도, 전라남도, 충남 등)과 2026년 인천 개편 전 주소(중구·서구)도 지금 지역으로 바꿔 비교합니다.
+- 보호소 좌표가 주소와 맞지 않는 곳이 있어서(예: 전북 장수군 보호소가 충북 청주 근처 좌표, 경남 거창군 보호소가 0,0)
+  `scripts/check_shelter_coords.py`가 보호소 주소를 카카오 주소 검색으로 찾아 공공데이터 좌표와 비교하고,
+  3km 넘게 다르거나 좌표가 없는 곳만 `pawmatch/shelter_coords.json`에 고친 좌표로 저장합니다.
+  앱은 카카오를 부르지 않고 이 파일만 읽으며, 보호소 주소가 확인할 때와 달라졌으면(이사 등) 고친 좌표를 쓰지 않습니다.
+  이 확인은 2026년 11월에 한 번 실행했습니다. 다시 확인하려면 카카오 키를 넣고
+  `python scripts/check_shelter_coords.py`를 실행한 뒤 바뀐 `shelter_coords.json`을 커밋합니다.
 - 공공데이터에 보호소로 등록되지 않은 시설(예: 인천시 반려동물 복지문화센터)은 표시되지 않습니다.
 - 카카오 키(`KAKAO_REST_API_KEY`)가 없거나 찾지 못하면 시청/도청 위치를 기준으로 계산합니다.
   [Kakao Developers](https://developers.kakao.com/)에서 앱을 만들고 REST API 키를 발급받아 `.env` 또는 Streamlit Secrets에 넣으면 됩니다.
