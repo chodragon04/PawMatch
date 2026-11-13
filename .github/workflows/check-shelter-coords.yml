@@ -1,0 +1,45 @@
+# 보호소 좌표 확인: 보호소 주소를 카카오 주소 검색으로 찾아 공공데이터 좌표와 비교합니다.
+# 결과(고칠 보호소 목록)는 실행 요약 표, 로그, 첨부 파일(shelter-coords)로 남습니다.
+# 결과를 pawmatch/shelter_coords.json에 넣어 커밋하면 앱이 고친 좌표를 씁니다.
+#
+# 필요한 설정: 저장소 Settings → Secrets and variables → Actions의 KAKAO_REST_API_KEY
+# 실행: Actions → 보호소 좌표 확인 → Run workflow (확인 스크립트를 고친 PR에서도 자동으로 실행)
+
+name: 보호소 좌표 확인
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - scripts/check_shelter_coords.py
+      - pawmatch/shelter_coords.py
+      - .github/workflows/check-shelter-coords.yml
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: 패키지 설치
+        run: pip install requests
+
+      - name: 보호소 좌표 확인
+        env:
+          KAKAO_REST_API_KEY: ${{ secrets.KAKAO_REST_API_KEY }}
+        run: python scripts/check_shelter_coords.py --out shelter_coords.json --print-json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shelter-coords
+          path: shelter_coords.json
