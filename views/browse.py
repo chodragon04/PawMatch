@@ -10,13 +10,19 @@ from pawmatch import traits as T
 from pawmatch.detail import render_dog_cards
 from pawmatch.display import chips_markdown, format_updated, score_badge
 from pawmatch.geo import REGION_CENTERS, ShelterLocator, haversine_km
-from pawmatch.location import PICK_REGION, locate_sigungu, remembered_location, request_my_location
+from pawmatch.location import (
+    PICK_REGION,
+    WHOLE_COUNTRY,
+    WHOLE_SIDO,
+    locate_sigungu,
+    region_select,
+    remembered_location,
+    request_my_location,
+)
 from pawmatch.matching import ANY, breed_options
-from pawmatch.regions import load_regions
 from pawmatch.ui import inject_card_css, is_phone, load_data_or_stop, page_header
 
 PAGE_SIZE = 24  # 한 번에 보여줄 아이 수
-WHOLE_COUNTRY, WHOLE_SIDO = "전국", "전체"
 KEY = S.BROWSE  # 이 화면의 입력칸 key 앞에 붙입니다
 KEEP = {"persist_state": S.PERSIST}  # 다른 화면에 갔다 와도 입력값 유지
 
@@ -112,17 +118,10 @@ def nearest_origin(c: B.BrowseFilter) -> tuple[tuple[float, float] | None, str]:
 
 def filter_controls(dogs: list[dict], survey) -> B.BrowseFilter:
     """검색 조건 입력칸(접을 수 있음)을 보여주고, 고른 조건을 돌려줍니다."""
-    regions = load_regions()
     with st.expander("검색 조건", expanded=filters_start_open(), key=f"{KEY}filters", icon=":material/tune:"):
-        c1, c2, c3 = st.columns([1, 1, 2])
-        sido = c1.selectbox(
-            "시/도", [WHOLE_COUNTRY, *REGION_CENTERS], key=f"{KEY}sido", on_change=reset_page, **KEEP
-        )
-        sigungu_options = [WHOLE_SIDO, *regions.get(sido, ())]
-        sigungu = c2.selectbox(
-            "시/군/구", sigungu_options, key=f"{KEY}sigungu_{sido}", on_change=reset_page,
-            disabled=len(sigungu_options) == 1, **KEEP,
-        )  # fmt: skip
+        c_region, c3 = st.columns(2)
+        with c_region:
+            sido, sigungu = region_select(f"{KEY}sido", f"{KEY}sigungu", whole_country=True, on_change=reset_page)
         keyword = c3.text_input(
             "검색어", key=f"{KEY}keyword", on_change=reset_page, **KEEP,
             placeholder="예: 온순, 갈색, 진도, 보호소 이름 (여러 낱말은 모두 포함)",
@@ -168,8 +167,8 @@ def filter_controls(dogs: list[dict], survey) -> B.BrowseFilter:
                 st.session_state[f"{KEY}go_match"] = True
 
     return B.BrowseFilter(
-        sido=None if sido == WHOLE_COUNTRY else sido,
-        sigungu=None if sigungu == WHOLE_SIDO else sigungu,
+        sido=sido,
+        sigungu=sigungu,
         sizes=frozenset(sizes or ()),
         ages=frozenset(ages or ()),
         sex=sex,

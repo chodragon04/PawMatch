@@ -5,15 +5,14 @@ import time
 
 import streamlit as st
 
-from pawmatch import state as S
 from pawmatch.detail import render_dog_cards
 from pawmatch.display import score_badge
-from pawmatch.geo import REGION_CENTERS, ShelterLocator, address_in_area
+from pawmatch.geo import ShelterLocator, address_in_area
 from pawmatch.image_search import ClipEmbedder, PhotoIndex, load_image, read_local_index, read_remote_index
+from pawmatch.location import region_select
 from pawmatch.ui import inject_card_css, load_data_or_stop, page_header
 
 TOP_K = 24
-WHOLE_COUNTRY = "전국"
 LOW_SIMILARITY = 0.7  # 가장 닮은 아이도 이보다 낮으면 안내 (강아지가 아닌 사진은 실측 0.55~0.60, 다른 강아지끼리 중앙값 0.75)
 UPLOAD_TYPES = ["jpg", "jpeg", "png", "webp"]
 # 카메라는 '카메라 켜기'를 눌렀을 때만 켜고, 켠 뒤 이 시간 동안은 이 화면에 다시 와도 바로 켜서
@@ -81,10 +80,9 @@ with st.container(border=True):
                 "카메라 켜기", on_click=turn_camera_on, icon=":material/photo_camera:",
                 help="한 번 켜면 30분 동안은 이 화면에 다시 와도 바로 켜져요.",
             )  # fmt: skip
-    sido = st.selectbox(
-        "어디에서 찾을까요?", [WHOLE_COUNTRY, *REGION_CENTERS], key="photo_sido", persist_state=S.PERSIST,
-        help="보호소 주소 기준이에요.",
-    )  # fmt: skip
+    st.markdown("어디에서 찾을까요?")
+    sido, sigungu = region_select("photo_sido", "photo_sigungu", whole_country=True)
+    st.caption("보호소 주소 기준이에요.")
 
 photo = uploaded or taken
 if photo is None:
@@ -107,7 +105,7 @@ except Exception as exc:  # 깨진 사진, 모델 내려받기 실패 등
 by_id = {str(dog.get("desertionNo")): dog for dog in data.dogs}
 allowed = {
     dog_id for dog_id, dog in by_id.items()
-    if sido == WHOLE_COUNTRY or address_in_area(dog.get("careAddr"), sido)
+    if sido is None or address_in_area(dog.get("careAddr"), sido, sigungu)
 }  # fmt: skip
 searchable = allowed & index.dog_ids()
 results = index.search(query, top_k=TOP_K, allowed=searchable)
@@ -115,7 +113,7 @@ results = index.search(query, top_k=TOP_K, allowed=searchable)
 preview, summary = st.columns([1, 3], vertical_alignment="center")
 preview.image(photo, caption="올린 사진", width="stretch")
 with summary:
-    where = "전국" if sido == WHOLE_COUNTRY else sido
+    where = f"{sido} {sigungu or ''}".strip() if sido else "전국"
     st.header(f"생김새가 비슷한 아이 {len(results)}마리", anchor=False)
     pending = len(allowed) - len(searchable)
     st.caption(
