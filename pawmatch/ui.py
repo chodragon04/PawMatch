@@ -277,19 +277,25 @@ NAV_ACTIVE_CSS = """
 </style>
 """
 
+# 위쪽 메뉴와 오른쪽 위 Streamlit 버튼(⋮, 배포 사이트에서는 Share·☆·✎·GitHub도) 사이 간격.
+# 버튼 크기가 화면 크기와 상관없이 고정(px)이라 간격도 고정으로 둡니다. 버튼 폭(--pm-toolbar-w)은 화면에서 잽니다(A11Y_JS).
+TOOLBAR_GAP_PX = 24
 # PC(폭 1024px 이상): 아이콘 탭을 화면 위쪽 메뉴 줄로 옮기고, 왼쪽에 'PawMatch'(홈으로)를 둡니다.
 # 휴대폰·태블릿 세로 화면은 지금처럼 하단 탭. 메뉴 줄 안쪽 폭은 본문(1280px, 좌우 5rem 여백)과 맞춥니다.
 # z-index는 Streamlit 위쪽 도구 줄(⋮ 메뉴)보다 한 단계 낮게 해서 ⋮ 버튼을 가리지 않습니다.
 NAV_BRAND_KEY = "pm_brand"
 NAV_TOP_CSS = """
 <style>
+:root { --pm-toolbar-gap: __GAP__px; }
 /* 휴대폰: 'PawMatch'와 그 바깥 칸까지 숨겨서 하단 탭 높이가 그대로이게 */
 .st-key-pm_brand, [data-testid="stLayoutWrapper"]:has(> .st-key-pm_brand) { display: none !important; }
 @media (min-width: 1024px) {
   .st-key-pm_nav { top: 0; bottom: auto; z-index: 999989; border-top: none; border-bottom: 1px solid var(--pm-line);
                    box-shadow: 0 2px 12px rgba(255, 138, 61, 0.08); flex-direction: row !important;
                    align-items: center; justify-content: space-between; min-height: 3.75rem;
-                   padding: 0.35rem max(5rem, calc((100vw - 1120px) / 2)) !important; }
+                   padding: 0.35rem max(5rem, calc((100vw - 1120px) / 2)) !important;
+                   padding-right: max(5rem, calc((100vw - 1120px) / 2),
+                                      calc(var(--pm-toolbar-w, 3rem) + var(--pm-toolbar-gap))) !important; }
   .st-key-pm_brand, [data-testid="stLayoutWrapper"]:has(> .st-key-pm_brand) {
     display: flex !important; width: auto !important; flex: 0 0 auto !important; }
   .st-key-pm_brand a[data-testid="stPageLink-NavLink"] { flex-direction: row !important; gap: 0.35rem;
@@ -315,7 +321,7 @@ NAV_TOP_CSS = """
   [data-testid="stMainBlockContainer"] { padding-top: 5rem !important; padding-bottom: 3rem !important; }
 }
 </style>
-"""
+""".replace("__GAP__", str(TOOLBAR_GAP_PX))
 
 # Streamlit Community Cloud는 공개 앱 화면 오른쪽 아래에 만든 사람 사진과 배지(약 115x46px)를 띄웁니다.
 # 앱 바깥(부모 화면)에 있어서 숨길 수 없으므로, 좁은 화면에서는 탭을 왼쪽으로 모아 배지 자리를 비워 둡니다.
@@ -323,6 +329,8 @@ NAV_TOP_CSS = """
 #  이므로 폭 822px 이하에서 겹침 → 여유를 두고 860px까지 왼쪽으로 모음)
 NAV_CLOUD_BADGE_CSS = """
 <style>
+/* 배포 사이트는 오른쪽 위에 Share·☆·✎·GitHub·⋮ 버튼이 붙음: 화면에서 재기 전까지 쓸 폭 (A11Y_JS가 실제 폭으로 바꿈) */
+:root { --pm-toolbar-w: 220px; }
 @media (max-width: 860px) {
   .st-key-pm_nav { padding-right: 120px !important; }
   .st-key-pm_nav [data-testid="stHorizontalBlock"] { margin: 0 !important; }
@@ -385,6 +393,22 @@ A11Y_JS = """
       el.setAttribute("aria-label", "도움말: " + el.getAttribute("aria-label").slice(9));
     });
   }
+  // 오른쪽 위 Streamlit 버튼들(⋮, 배포 사이트의 Share 등)이 차지하는 폭을 재서 위쪽 메뉴가 비켜 가게 (PC)
+  function measureToolbar() {
+    var left = Infinity;
+    document.querySelectorAll("[data-testid=stHeader] button, [data-testid=stHeader] a").forEach(function (b) {
+      var r = b.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0) left = Math.min(left, r.left);
+    });
+    if (left === Infinity) return;
+    var w = Math.ceil(document.documentElement.clientWidth - left) + "px";
+    if (document.documentElement.style.getPropertyValue("--pm-toolbar-w") !== w) {
+      document.documentElement.style.setProperty("--pm-toolbar-w", w);
+    }
+  }
+  var applyBase = apply;
+  apply = function () { applyBase(); measureToolbar(); };
+  window.addEventListener("resize", function () { requestAnimationFrame(measureToolbar); });
   window.__pmA11yApply = apply;
   var queued = false;
   new MutationObserver(function () {
