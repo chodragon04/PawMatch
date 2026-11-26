@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import html
 import json
+import re
 from urllib.parse import urlparse
 
 import streamlit as st
@@ -387,3 +388,44 @@ def page_header(title: str) -> None:
 def inject_card_css() -> None:
     """카드 모양과 찜(하트) 버튼 동작을 화면에 넣습니다. 카드를 그리기 전에 한 번 부릅니다."""
     st.html(CARD_CSS + FAVORITE_CSS + FAVORITE_JS, unsafe_allow_javascript=True)
+
+
+_PHONE_UA = re.compile(r"iPhone|iPod|Android.*Mobile|Mobile.*Firefox|Windows Phone", re.IGNORECASE)
+
+
+def is_phone(user_agent: str | None = None) -> bool:
+    """휴대폰 브라우저인지 (User-Agent로 판단). 태블릿과 PC는 False.
+
+    화면 처음 모양(예: 검색 조건을 펼쳐 둘지)을 정할 때만 씁니다. 모를 때는 PC로 봅니다.
+    """
+    if user_agent is None:
+        try:
+            user_agent = st.context.headers.get("User-Agent", "")
+        except Exception:  # 화면 테스트(AppTest) 등 요청 정보가 없을 때
+            user_agent = ""
+    return bool(_PHONE_UA.search(user_agent or ""))
+
+
+_SCROLL_JS = """
+<script>
+(function () {
+  // %(nonce)s: 제출할 때마다 글이 달라져서 다시 실행됩니다.
+  // 화면을 다시 그리는 동안 스크롤 위치가 되돌아갈 수 있어서, 1.5초 동안 몇 번 확인하며 맞춥니다.
+  var tries = 0;
+  (function go() {
+    var el = document.querySelector(".st-key-%(key)s");
+    if (el) {
+      el.style.scrollMarginTop = "4.5rem";  // 위쪽 메뉴(⋮) 줄에 제목이 가리지 않게
+      var top = el.getBoundingClientRect().top;
+      if (Math.abs(top - 72) > 24) el.scrollIntoView({ block: "start" });
+    }
+    if (tries++ < 15) setTimeout(go, 100);
+  })();
+})();
+</script>
+"""
+
+
+def scroll_to(key: str, nonce: int) -> None:
+    """key가 key인 칸(st.container(key=...))이 화면 맨 위에 오게 스크롤합니다. (제출 직후 결과로 이동)"""
+    st.html(_SCROLL_JS % {"key": key, "nonce": nonce}, unsafe_allow_javascript=True)

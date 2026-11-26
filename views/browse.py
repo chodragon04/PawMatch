@@ -8,12 +8,12 @@ from pawmatch import browse as B
 from pawmatch import state as S
 from pawmatch import traits as T
 from pawmatch.detail import render_dog_cards
-from pawmatch.display import format_updated, score_badge
+from pawmatch.display import chips_markdown, format_updated, score_badge
 from pawmatch.geo import REGION_CENTERS, ShelterLocator
 from pawmatch.location import PICK_REGION
 from pawmatch.matching import ANY, breed_options
 from pawmatch.regions import load_regions
-from pawmatch.ui import inject_card_css, load_data_or_stop, page_header
+from pawmatch.ui import inject_card_css, is_phone, load_data_or_stop, page_header
 
 PAGE_SIZE = 24  # 한 번에 보여줄 아이 수
 WHOLE_COUNTRY, WHOLE_SIDO = "전국", "전체"
@@ -70,10 +70,28 @@ def carry_to_match(c: B.BrowseFilter) -> None:
     ss[S.MATCH_NOTICE] = message
 
 
-def filter_controls(dogs: list[dict]) -> B.BrowseFilter:
-    """검색 조건 입력칸을 보여주고, 고른 조건을 돌려줍니다."""
+def filters_start_open() -> bool:
+    """검색 조건을 처음에 펼쳐 둘지. 휴대폰은 결과가 먼저 보이게 접어 두고, 화면이 넓은 PC는 펼쳐 둡니다."""
+    return not is_phone()
+
+
+def chosen_labels(c: B.BrowseFilter) -> list[str]:
+    """고른 조건을 짧은 글로 (접힌 검색 조건 아래 요약 칩)."""
+    labels = [f"{c.sido} {c.sigungu or ''}".strip()] if c.sido else []
+    labels += [f"‘{c.keyword.strip()}’"] if c.keyword.strip() else []
+    labels += [T.SIZE_LABELS.get(x, "크기 예측 어려움") for x in B.SIZE_FILTER_LABELS if x in c.sizes]
+    labels += [T.AGE_LABELS[a] for a in T.AGE_LABELS if a in c.ages]
+    labels += [{"M": "수컷", "F": "암컷"}[c.sex]] if c.sex else []
+    labels += [B.STATUS_LABELS[x] for x in B.STATUS_LABELS if x in c.statuses]
+    breeds = sorted(c.breeds)
+    labels += breeds if len(breeds) <= 2 else [*breeds[:2], f"품종 {len(breeds) - 2}개 더"]
+    return labels
+
+
+def filter_controls(dogs: list[dict], survey) -> B.BrowseFilter:
+    """검색 조건 입력칸(접을 수 있음)을 보여주고, 고른 조건을 돌려줍니다."""
     regions = load_regions()
-    with st.container(border=True):
+    with st.expander("검색 조건", expanded=filters_start_open(), key=f"{KEY}filters", icon=":material/tune:"):
         c1, c2, c3 = st.columns([1, 1, 2])
         sido = c1.selectbox(
             "시/도", [WHOLE_COUNTRY, *REGION_CENTERS], key=f"{KEY}sido", on_change=reset_page, **KEEP
@@ -116,7 +134,16 @@ def filter_controls(dogs: list[dict]) -> B.BrowseFilter:
             placeholder="모든 품종", key=f"{KEY}breeds", on_change=reset_page, select_all=False, **KEEP,
         )  # fmt: skip
 
-        st.button("조건 초기화", on_click=reset_filters, type="tertiary", icon=":material/restart_alt:")
+        # 입양 매칭으로 이어 가기 (예전에는 검색 조건과 결과 사이에 따로 있어서 결과를 아래로 밀었음)
+        if survey is None:
+            st.caption("입양 매칭 질문에 답하면 나와 잘 맞는 순으로도 볼 수 있어요.")
+        with st.container(horizontal=True, gap="small"):
+            st.button("조건 초기화", on_click=reset_filters, type="tertiary", icon=":material/restart_alt:")
+            if st.button(
+                "이 조건으로 입양 매칭 하기", icon=":material/volunteer_activism:",
+                help="고른 조건(지역·크기·나이·성별·품종)을 입양 매칭으로 가져가요. 여기서는 거리를 점수에 넣지 않아요.",
+            ):  # fmt: skip
+                st.session_state[f"{KEY}go_match"] = True
 
     return B.BrowseFilter(
         sido=None if sido == WHOLE_COUNTRY else sido,
@@ -136,30 +163,25 @@ inject_card_css()
 data = load_data_or_stop()
 st.caption(f"전체 {len(data.dogs):,}마리 · {format_updated(data.fetched_at)}")
 
-conditions = filter_controls(data.dogs)
-found = B.filter_dogs(data.dogs, conditions)
-
 # 입양 매칭 설문을 했다면 '나와 잘 맞는 순' 정렬과 적합도 점수를 함께 보여줍니다.
 survey = st.session_state.get(S.MATCH_SURVEY)
+conditions = filter_controls(data.dogs, survey)
+if st.session_state.pop(f"{KEY}go_match", False):
+    carry_to_match(conditions)
+    st.switch_page("views/match.py")
+found = B.filter_dogs(data.dogs, conditions)
+
+# 고른 조건 요약: 검색 조건을 접어 둬도 무엇으로 걸렀는지 보이게
+chosen = chosen_labels(conditions)
+if chosen:
+    with st.container(horizontal=True, vertical_alignment="center", gap="small"):
+        st.markdown(chips_markdown(chosen), width="content")
+        st.button("초기화", key=f"{KEY}reset_chips", on_click=reset_filters, type="tertiary",
+                  icon=":material/close:", help="고른 조건을 모두 지워요.")  # fmt: skip
+
 sort_options = [o for o in B.SORT_LABELS if survey is not None or o != B.FIT]
 if st.session_state.get(f"{KEY}order") not in sort_options:
     st.session_state[f"{KEY}order"] = B.RECENT
-
-with st.container(border=True):
-    if survey is None:
-        st.markdown("입양 매칭 질문에 답하면 나와 잘 맞는 순으로도 볼 수 있어요.")
-    else:
-        sorted_by_fit = st.session_state.get(f"{KEY}order") == B.FIT
-        st.markdown(
-            "입양 매칭 답변으로 적합도를 계산했어요."
-            + ("" if sorted_by_fit else " 정렬을 나와 잘 맞는 순으로 바꿔 보세요.")
-        )
-    if st.button(
-        "이 조건으로 입양 매칭 하기", icon=":material/volunteer_activism:",
-        help="고른 조건(지역·크기·나이·성별·품종)을 입양 매칭으로 가져가요. 여기서는 거리를 점수에 넣지 않아요.",
-    ):  # fmt: skip
-        carry_to_match(conditions)
-        st.switch_page("views/match.py")
 
 head, sort_col = st.columns([3, 1], vertical_alignment="bottom")
 head.header(f"조건에 맞는 아이 {len(found):,}마리", anchor=False)
@@ -167,6 +189,9 @@ order = sort_col.selectbox(
     "정렬", sort_options, format_func=B.SORT_LABELS.get, key=f"{KEY}order", on_change=reset_page,
     label_visibility="collapsed", **KEEP,
 )  # fmt: skip
+
+if survey is not None and order != B.FIT:
+    st.caption("입양 매칭 답변으로 적합도를 계산했어요. 정렬을 '나와 잘 맞는 순'으로 바꿔 보세요.")
 
 if not found:
     st.info("조건에 맞는 아이가 없어요. 조건을 줄이거나 초기화해 보세요.")
