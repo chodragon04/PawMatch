@@ -11,6 +11,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 from datetime import date
+from functools import lru_cache
 
 from pawmatch.display import today_kst
 
@@ -133,8 +134,9 @@ GENTLE, FRIENDLY, TIMID, AGGRESSIVE, ACTIVE, CALM, HEALTH = (
 )  # fmt: skip
 
 _KEYWORDS: dict[str, re.Pattern] = {
-    GENTLE: re.compile(r"온순|순하|순함|순해|순둥|순딩|얌전|착하|착함|착해|착한"),
-    FRIENDLY: re.compile(r"사람을?\s?(?:잘\s?)?(?:좋아|따[르름라])|친화|애교|사교|잘\s?따[르름라]|사람\s?좋아"),
+    # '순한 편'처럼 쓴 메모가 많아서 '순한'도 찾습니다. ('단순한'은 빼고)
+    GENTLE: re.compile(r"온순|순하|순함|순해|(?<!단)순한|순둥|순딩|얌전|착하|착함|착해|착한"),
+    FRIENDLY: re.compile(r"사람을?\s?(?:잘\s?)?(?:좋아|따[르름라])|친화|친근|애교|사교|잘\s?따[르름라]|사람\s?좋아"),
     TIMID: re.compile(r"겁|소심|경계|예민|낯가림|낯을\s?가|무서워"),
     AGGRESSIVE: re.compile(r"사나|공격|입질|물어|무는|물려|물기|물음|으르렁"),
     ACTIVE: re.compile(r"활발|에너지|발랄|활동적|장난"),
@@ -171,7 +173,9 @@ class MemoTraits:
         return flag in self.flags
 
 
+@lru_cache(maxsize=20_000)
 def memo_traits(memo: str | None) -> MemoTraits:
+    """메모에서 성격·건강 정보를 찾습니다. 같은 메모는 한 번만 분석합니다(메모 글이 캐시 열쇠라 새 데이터에도 그대로 맞음)."""
     text = memo or ""
     flags, matches = set(), {}
     for flag, pattern in _KEYWORDS.items():
@@ -188,6 +192,43 @@ def memo_traits(memo: str | None) -> MemoTraits:
             matches.setdefault(flag, _snippet(text, m.start(), m.end()))
             break
     return MemoTraits(frozenset(flags), matches)
+
+
+# 검색어를 같은 뜻으로 넓히지 않는 묶음: 건강은 범위가 넓어서('피부'로 찾았는데 골절인 아이가 나오면 안 됨) 글자 그대로만 찾습니다.
+_LITERAL_ONLY = frozenset({HEALTH})
+
+
+@lru_cache(maxsize=4_096)
+def phrase_traits(first: str, second: str) -> frozenset[str]:
+    """두 낱말이 이어져야 뜻이 되는 성격 표현('사람 좋아', '잘 따름')이면 그 묶음, 아니면 빈 값.
+
+    찾은 말이 두 낱말에 걸쳐 있을 때만 인정합니다. ('온순 갈색'은 '온순'만으로 찾은 것이라 따로따로 봅니다)
+    """
+    joined = first + second
+    flags = set()
+    for flag, pattern in _KEYWORDS.items():
+        if flag in _LITERAL_ONLY:
+            continue
+        if any(m.start() < len(first) < m.end() for m in pattern.finditer(joined)):
+            flags.add(flag)
+    return frozenset(flags)
+
+
+# '겁 많음', '순한 편'처럼 정도만 더하는 말: 글자 그대로 없으면 없어도 되는 것으로 봅니다.
+_DEGREE_WORD_RE = re.compile(r"^(?:많|편|성격|매우|아주|엄청|너무|조금|좀)")
+
+
+def is_degree_word(word: str) -> bool:
+    return bool(_DEGREE_WORD_RE.match(word))
+
+
+@lru_cache(maxsize=4_096)
+def query_traits(word: str) -> frozenset[str]:
+    """둘러보기 검색어 낱말이 뜻하는 성격 묶음. '순한' → 온순, '사람좋아함' → 사람 좋아함, '입질없음' → 온순.
+
+    메모 분석과 같은 규칙을 검색어에 그대로 써서, 메모에 다른 말로 적혀 있어도 같은 뜻이면 찾게 합니다.
+    """
+    return memo_traits(word).flags - _LITERAL_ONLY
 
 
 # ---------------------------------------------------------------- 종합

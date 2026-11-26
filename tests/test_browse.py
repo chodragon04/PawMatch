@@ -110,3 +110,21 @@ def test_sort_nearest_puts_unknown_distance_last():
     assert ids(B.sort_dogs(DOGS, B.NEAREST, TODAY, distances=distances)) == ["3", "4", "1", "2"]
     # 기준 위치가 없으면(거리 없음) 최근 등록순
     assert ids(B.sort_dogs(DOGS, B.NEAREST, TODAY)) == ids(B.sort_dogs(DOGS, B.RECENT, TODAY))
+
+
+def test_keyword_finds_same_meaning_and_ignores_spacing():
+    gentle = dog("11", specialMark="얌전함, 갈색 털")
+    friendly = dog("12", specialMark="사람 좋아함")
+    timid = dog("13", specialMark="소심함", colorCd="검정")
+    hurt = dog("14", specialMark="다리 골절")
+    pool = [gentle, friendly, timid, hurt]
+
+    def find(kw):
+        return ids(B.filter_dogs(pool, B.BrowseFilter(keyword=kw), TODAY))
+
+    assert find("순한") == ["11"]  # 메모에 '순한'이 없어도 같은 뜻(얌전)이면 찾음
+    assert find("사람좋아") == ["12"]  # 띄어쓰기 달라도 찾음
+    assert find("사람 좋아") == ["12"]  # 두 낱말이 이어져야 뜻이 되는 말
+    assert find("겁 많음") == ["13"]  # '많음'은 정도만 더하는 말
+    assert find("온순 갈색") == ["11"]  # 성격과 털색 둘 다 맞아야 함
+    assert find("피부") == []  # 건강은 글자 그대로만 (골절인 아이는 안 나옴)

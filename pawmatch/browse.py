@@ -58,12 +58,39 @@ def notice_status(dog: dict, today: date | None = None) -> str | None:
 
 
 def _keyword_match(dog: dict, keyword: str) -> bool:
-    """검색어를 띄어쓰기로 나눠 모든 낱말이 정보 어딘가에 들어 있으면 통과 (대소문자 무시)."""
+    """검색어를 띄어쓰기로 나눠 모든 낱말이 정보 어딘가에 맞으면 통과 (대소문자 무시).
+
+    낱말마다 ① 글자 그대로 ② 띄어쓰기를 빼고(예: '사람좋아' ↔ '사람 좋아함') ③ 같은 뜻의 성격
+    (예: '순한' ↔ 메모의 '온순함', '얌전') 중 하나라도 맞으면 됩니다. ③은 입양 매칭과 같은 메모 분석을 씁니다.
+    '사람 좋아'처럼 두 낱말이 이어져야 성격이 되는 말은 한 덩어리로 보고, '많음'·'편'처럼 정도만 더하는 말은
+    글자 그대로 없어도 됩니다.
+    """
     words = keyword.casefold().split()
     if not words:
         return True
     text = " ".join(str(dog.get(field) or "") for field in KEYWORD_FIELDS).casefold()
-    return all(word in text for word in words)
+    compact = "".join(text.split())
+    memo_flags = T.memo_traits(dog.get("specialMark")).flags
+
+    def literal(word: str) -> bool:
+        return word in text or word in compact
+
+    i = 0
+    while i < len(words):
+        word = words[i]
+        if i + 1 < len(words):  # '사람 좋아' → '사람좋아' 한 덩어리
+            joined_flags = T.phrase_traits(word, words[i + 1])
+            if joined_flags and (literal(word + words[i + 1]) or joined_flags & memo_flags):
+                i += 2
+                continue
+        if literal(word) or (T.query_traits(word) & memo_flags):
+            i += 1
+            continue
+        if i > 0 and T.is_degree_word(word):  # '겁 많음'의 '많음'
+            i += 1
+            continue
+        return False
+    return True
 
 
 def matches(dog: dict, f: BrowseFilter, today: date | None = None) -> bool:
