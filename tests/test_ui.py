@@ -91,3 +91,13 @@ def test_is_phone_by_user_agent():
     assert not is_phone("Mozilla/5.0 (Linux; Android 14; SM-X710) AppleWebKit/537.36 Safari/537.36")  # 태블릿
     assert not is_phone("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
     assert not is_phone("")  # 모르면 PC로 봄
+
+
+def test_pc_top_menu_keeps_gap_from_streamlit_toolbar():
+    from pawmatch.ui import A11Y_JS, NAV_CLOUD_BADGE_CSS, NAV_TOP_CSS, TOOLBAR_GAP_PX
+
+    # 위쪽 메뉴 오른쪽 여백 = max(본문 여백, Streamlit 버튼 폭 + 고정 간격)
+    assert f"--pm-toolbar-gap: {TOOLBAR_GAP_PX}px" in NAV_TOP_CSS
+    assert "calc(var(--pm-toolbar-w, 3rem) + var(--pm-toolbar-gap))" in NAV_TOP_CSS
+    assert "--pm-toolbar-w" in A11Y_JS  # 화면에서 버튼 폭을 잼
+    assert "--pm-toolbar-w: 220px" in NAV_CLOUD_BADGE_CSS  # 배포 사이트: 재기 전 기본 폭
