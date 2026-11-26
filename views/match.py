@@ -89,7 +89,8 @@ def render_result(result: M.MatchResult, index: int, locator: ShelterLocator) ->
         render_card(result.dog, distance_km=result.distance_km, key_prefix=f"match{index}")
         st.markdown(score_badge(f"적합도 {result.score}점"))
         lines = list(result.reasons[:MAX_REASONS])
-        lines += [f":orange[{c}]" for c in result.cautions[:MAX_CAUTIONS]]  # 확인해 볼 점은 주황 글씨
+        # 확인해 볼 점: 색만으로 구분하지 않도록 '확인' 표시도 붙입니다
+        lines += [f":orange[**확인** · {c}]" for c in result.cautions[:MAX_CAUTIONS]]
         if lines:
             st.caption("\n\n".join(lines))
         detail_button(

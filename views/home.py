@@ -57,11 +57,11 @@ SHORTCUT_CSS = """
 <style>
 [class*="st-key-pm_short_"] { position: relative; gap: 0.1rem !important; }
 [class*="st-key-pm_short_"] * { position: static !important; }
-[class*="st-key-pm_short_"]:hover { border-color: #FF8A3D !important; background: #FFF4EC; }
+[class*="st-key-pm_short_"]:hover { border-color: var(--pm-orange) !important; background: var(--pm-peach); }
 [class*="st-key-pm_short_"] a[data-testid="stPageLink-NavLink"]::after { content: ""; position: absolute; inset: 0; z-index: 1; }
 [class*="st-key-pm_short_"] a[data-testid="stPageLink-NavLink"] { padding: 0; background: transparent !important; }
 [class*="st-key-pm_short_"] a[data-testid="stPageLink-NavLink"] p { font-size: 1.05rem; font-weight: 700; }
-[class*="st-key-pm_short_"] a[data-testid="stPageLink-NavLink"] span[data-testid="stIconMaterial"] { color: #FF8A3D; font-size: 1.4rem; }
+[class*="st-key-pm_short_"] a[data-testid="stPageLink-NavLink"] span[data-testid="stIconMaterial"] { color: var(--pm-orange-icon); font-size: 1.4rem; }
 </style>
 """
 
@@ -100,7 +100,7 @@ with about, st.popover("소개", icon=":material/info:", type="tertiary"):
         f"{format_updated(data.fetched_at)}  \n"
         "소스 코드: [GitHub](https://github.com/chodragon04/PawMatch) · MIT License"
     )
-st.markdown(f"지금 가족을 기다리는 아이들 **:primary[{len(dogs):,}마리]**")
+st.markdown(f"지금 가족을 기다리는 아이들 **:orange[{len(dogs):,}마리]**")
 
 inject_card_css()
 st.markdown("#### 가까운 보호소의 아이들")

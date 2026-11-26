@@ -14,6 +14,15 @@ font = "Gowun Dodum:https://fonts.googleapis.com/css2?family=Gowun+Dodum&display
 headingFont = "Jua:https://fonts.googleapis.com/css2?family=Jua&display=swap"
 # Jua는 보통 굵기 하나뿐이라, 굵게(600~700) 그리면 브라우저가 획을 억지로 두껍게 만들어 뭉개집니다.
 headingFontWeights = [400, 400, 400, 400, 400, 400]
+# 아래 색은 pawmatch/colors.py와 같은 값입니다. (tests/test_colors.py가 같은지 확인)
+# 밝은 주황(primaryColor)은 글자로 쓰면 대비가 낮아서, 주황 글자·배지·링크는 진한 주황을 씁니다.
+orangeTextColor = "#B8480E"
+orangeBackgroundColor = "#FFEAD9"
+linkColor = "#B8480E"
+# 안내 상자(st.info)를 기본 파란색 대신 테마 색으로
+blueColor = "#E0610B"
+blueTextColor = "#3A2E2A"
+blueBackgroundColor = "#FFF4EC"
 
 [server]
 # 사진으로 찾기에 올리는 사진 크기 한도(MB). 기본 200MB는 메모리가 1GB 정도인 Streamlit Cloud에 너무 큽니다.
