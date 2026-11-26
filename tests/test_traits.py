@@ -95,3 +95,22 @@ def test_energy_level():
     border = T.profile({"kindNm": "보더 콜리", "age": "2021(년생)", "weight": "18(Kg)"}, TODAY)
     senior = T.profile({"kindNm": "믹스견", "age": "2014(년생)", "weight": "8(Kg)"}, TODAY)
     assert border.energy == T.HIGH and senior.energy == T.LOW
+
+
+def test_memo_finds_sunhan_and_chingeun():
+    assert T.memo_traits("긴장하지만 순한 편").has(T.GENTLE)  # '순한'도 온순
+    assert not T.memo_traits("단순한 골절").has(T.GENTLE)  # '단순한'은 아님
+    assert T.memo_traits("친근하고 활발함").has(T.FRIENDLY)
+
+
+def test_query_traits_uses_same_rules_but_not_health():
+    assert T.query_traits("순한") == {T.GENTLE}
+    assert T.query_traits("입질없음") == {T.GENTLE}  # 부정하면 순한 쪽
+    assert T.query_traits("피부") == frozenset()  # 건강은 글자 그대로만 찾음
+    assert T.query_traits("갈색") == frozenset()
+
+
+def test_phrase_traits_only_when_match_spans_both_words():
+    assert T.phrase_traits("사람", "좋아") == {T.FRIENDLY}
+    assert T.phrase_traits("온순", "갈색") == frozenset()  # '온순'만으로 찾은 것이라 따로 봄
+    assert T.is_degree_word("많음") and T.is_degree_word("편") and not T.is_degree_word("갈색")

@@ -125,6 +125,8 @@ def filter_controls(dogs: list[dict], survey) -> B.BrowseFilter:
         keyword = c3.text_input(
             "검색어", key=f"{KEY}keyword", on_change=reset_page, **KEEP,
             placeholder="예: 온순, 갈색, 진도, 보호소 이름 (여러 낱말은 모두 포함)",
+            help="'순한', '사람 좋아함', '겁 많음'처럼 쓰면 보호소 메모에 다른 말(온순·얌전, 잘 따름, 소심)로 "
+            "적힌 아이도 같이 찾아요. 띄어쓰기는 달라도 괜찮아요.",
         )  # fmt: skip
 
         sizes = st.pills(
