@@ -51,3 +51,13 @@ def test_shows_cloud_badge_only_on_streamlit_cloud():
     assert not shows_cloud_badge("http://localhost:8501/")
     assert not shows_cloud_badge("https://streamlit.app.example.com/")
     assert not shows_cloud_badge(None)
+
+
+def test_a11y_script_marks_language_tab_and_korean_labels():
+    from pawmatch.ui import a11y_script
+
+    script = a11y_script(2)
+    assert "window.__pmNavActive = 2;" in script
+    assert 'doc.lang = "ko"' in script and "aria-current" in script
+    assert '"Upload": "사진 고르기"' in script and '"Take Photo": "사진 찍기"' in script
+    assert "__" + "LABELS__" not in script  # 자리표시가 모두 채워짐

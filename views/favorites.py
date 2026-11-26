@@ -27,7 +27,11 @@ if raw is None:  # 브라우저에서 아직 값을 못 받음 (곧 다시 그�
 
 ids = F.parse_favorites(raw)
 if not ids:
-    st.info("아직 찜한 아이가 없어요. 사진 왼쪽 아래 ♡를 눌러 보세요.", icon=":material/favorite:")
+    st.info("아직 찜한 아이가 없어요. 아이 사진 왼쪽 아래 ♡를 누르면 여기에 모여요.", icon=":material/favorite:")
+    # 빈 화면에서 바로 찾으러 갈 수 있게
+    left, right = st.columns(2)
+    left.page_link("views/browse.py", label="보호견 둘러보기", icon=":material/pets:")
+    right.page_link("views/match.py", label="입양 매칭 해 보기", icon=":material/volunteer_activism:")
     st.stop()
 
 by_id = {str(dog.get("desertionNo")): dog for dog in data.dogs}

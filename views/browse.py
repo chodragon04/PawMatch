@@ -163,7 +163,7 @@ with st.container(border=True):
         st.switch_page("views/match.py")
 
 head, sort_col = st.columns([3, 1], vertical_alignment="bottom")
-head.subheader(f"조건에 맞는 아이 {len(found):,}마리")
+head.header(f"조건에 맞는 아이 {len(found):,}마리", anchor=False)
 order = sort_col.selectbox(
     "정렬", sort_options, format_func=B.SORT_LABELS.get, key=f"{KEY}order", on_change=reset_page,
     label_visibility="collapsed", **KEEP,

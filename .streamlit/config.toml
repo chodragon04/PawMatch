@@ -14,6 +14,8 @@ font = "Gowun Dodum:https://fonts.googleapis.com/css2?family=Gowun+Dodum&display
 headingFont = "Jua:https://fonts.googleapis.com/css2?family=Jua&display=swap"
 # Jua는 보통 굵기 하나뿐이라, 굵게(600~700) 그리면 브라우저가 획을 억지로 두껍게 만들어 뭉개집니다.
 headingFontWeights = [400, 400, 400, 400, 400, 400]
+# 제목 크기: h1 화면 이름, h2 화면 안의 구역(가까운 보호소, 결과 등), h3 그 안의 묶음(보호소 이름)
+headingFontSizes = ["2.25rem", "1.6rem", "1.3rem"]
 # 아래 색은 pawmatch/colors.py와 같은 값입니다. (tests/test_colors.py가 같은지 확인)
 # 밝은 주황(primaryColor)은 글자로 쓰면 대비가 낮아서, 주황 글자·배지·링크는 진한 주황을 씁니다.
 orangeTextColor = "#B8480E"

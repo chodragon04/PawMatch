@@ -29,7 +29,7 @@ def survey_form(max_km: float | None, breeds: list[tuple[str, int]]) -> M.Survey
     """설문을 보여주고, 제출하면 응답을 돌려줍니다."""
     keep = {"persist_state": S.PERSIST}
     with st.form("match_survey_form"):
-        st.markdown("##### 생활 환경")
+        st.header("생활 환경", anchor=False)
         home = st.radio(
             "어디에 살고 계신가요?", list(M.HOME_LABELS), format_func=M.HOME_LABELS.get, horizontal=True,
             key=K("home"), **keep,
@@ -113,7 +113,7 @@ notice = st.session_state.pop(S.MATCH_NOTICE, None)
 if notice:
     st.success(notice)
 
-st.markdown("##### 지역")
+st.header("지역", anchor=False)
 origin = pick_origin(S.MATCH)
 distance_label = st.selectbox(
     "보호소까지 거리", list(DISTANCE_OPTIONS), index=0, disabled=origin is None, key=K("distance"),
@@ -146,7 +146,7 @@ if not results:
     st.stop()
 
 limit = min(st.session_state.get("match_limit", PAGE_SIZE), len(results))
-st.subheader(f"나와 잘 맞는 아이 {limit}마리")
+st.header(f"나와 잘 맞는 아이 {limit}마리", anchor=False)
 if survey.breeds:
     st.caption("품종: " + ", ".join(survey.breeds))
 st.caption(

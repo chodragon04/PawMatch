@@ -216,6 +216,10 @@ __ROOT__
 [data-testid="stCaptionContainer"] p { color: var(--pm-muted) !important; }
 /* 주황 버튼의 흰 글자는 대비가 낮아(2.35) 진한 갈색 글자로 */
 [data-testid^="stBaseButton-primary"], [data-testid^="stBaseButton-primary"] p { color: var(--pm-text) !important; }
+/* 화면 이름(h1): Streamlit 기본 위 여백이 커서 예전(h2) 위치에 맞춤 */
+[data-testid="stHeading"] h1 { padding-top: 0.25rem !important; }
+/* 알약 버튼: 손가락으로 누르기 쉽게 높이 44px (기본 32px) */
+button[data-variant="pills"] { min-height: 2.75rem; }
 /* 고른 알약 버튼 글자 */
 [data-testid="stButtonGroup"] button[aria-pressed="true"],
 [data-testid="stButtonGroup"] button[aria-pressed="true"] p { color: var(--pm-orange-text) !important; }
@@ -267,12 +271,71 @@ def shows_cloud_badge(url: str | None, embedded: bool = False) -> bool:
     return host.endswith(CLOUD_HOST_SUFFIX) and not embedded
 
 
+# Streamlit이 영어로 보여주는 부분을 한국어로 (CSS·설정으로 바꿀 수 없는 글자)
+KOREAN_LABELS = {
+    "Upload": "사진 고르기",  # 파일 올리기 버튼
+    "Take Photo": "사진 찍기",  # 카메라
+    "Clear photo": "다시 찍기",
+}
+UPLOAD_LIMIT_TEXT = "10MB까지 · JPG, PNG, WEBP"  # 원래: '10MB per file • JPG, PNG, WEBP'
+
+# 접근성 보정: 페이지 언어(한국어), 하단 탭의 지금 화면 표시(aria-current), 영어 글자 한국어로.
+# Streamlit이 화면을 다시 그릴 때마다 되돌아가므로, 바뀔 때마다 다시 맞춥니다. (한 번만 등록)
+A11Y_JS = """
+<script>
+(function () {
+  window.__pmNavActive = __ACTIVE__;
+  if (window.__pmA11y) { window.__pmA11yApply && window.__pmA11yApply(); return; }
+  window.__pmA11y = true;
+  var LABELS = __LABELS__, LIMIT = __LIMIT__;
+  function apply() {
+    var doc = document.documentElement;
+    if (doc.lang !== "ko") doc.lang = "ko";
+    document.querySelectorAll(".st-key-pm_nav a").forEach(function (a, i) {
+      if (i === window.__pmNavActive) { a.setAttribute("aria-current", "page"); } else { a.removeAttribute("aria-current"); }
+    });
+    document.querySelectorAll("[data-testid=stFileUploaderDropzone] button p, [data-testid=stCameraInputButton]").forEach(function (el) {
+      var t = el.textContent.trim();
+      if (LABELS[t]) el.textContent = LABELS[t];
+    });
+    document.querySelectorAll("[data-testid=stFileUploaderDropzoneInstructions] span").forEach(function (el) {
+      if (/per file/.test(el.textContent)) el.textContent = LIMIT;
+    });
+    document.querySelectorAll("[data-testid=stFileUploaderDropzoneInput]").forEach(function (el) {
+      if (el.getAttribute("aria-label") === "file upload") el.setAttribute("aria-label", "사진 파일 고르기");
+    });
+    document.querySelectorAll("button[aria-label^='Help for ']").forEach(function (el) {
+      el.setAttribute("aria-label", "도움말: " + el.getAttribute("aria-label").slice(9));
+    });
+  }
+  window.__pmA11yApply = apply;
+  var queued = false;
+  new MutationObserver(function () {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(function () { queued = false; apply(); });
+  }).observe(document.body, { childList: true, subtree: true, characterData: true });
+  apply();
+})();
+</script>
+"""
+
+
+def a11y_script(active: int) -> str:
+    return (
+        A11Y_JS.replace("__ACTIVE__", str(int(active)))
+        .replace("__LABELS__", json.dumps(KOREAN_LABELS, ensure_ascii=False))
+        .replace("__LIMIT__", json.dumps(UPLOAD_LIMIT_TEXT, ensure_ascii=False))
+    )
+
+
 def render_nav_bar(pages: list, current, short_titles: dict[str, str] | None = None) -> None:
     """화면 맨 아래 고정 아이콘 탭. current(지금 화면)는 주황색으로 표시합니다."""
     short_titles = short_titles or {}
     active = next((i for i, page in enumerate(pages) if page.url_path == current.url_path), -1)
     badge = shows_cloud_badge(st.context.url, st.context.is_embedded)
     st.html(NAV_CSS + NAV_ACTIVE_CSS % {"i": active} + (NAV_CLOUD_BADGE_CSS if badge else ""))
+    st.html(a11y_script(active), unsafe_allow_javascript=True)
     with st.container(key="pm_nav"):
         for i, (col, page) in enumerate(zip(st.columns(len(pages)), pages)):
             with col, st.container(key=f"pm_nav_{i}"):
@@ -280,8 +343,8 @@ def render_nav_bar(pages: list, current, short_titles: dict[str, str] | None = N
 
 
 def page_header(title: str) -> None:
-    """각 화면 맨 위의 화면 이름 (굵게, 짧게)."""
-    st.markdown(f"## {title}")
+    """각 화면 맨 위의 화면 이름. 화면마다 하나뿐인 가장 큰 제목(h1)입니다."""
+    st.title(title, anchor=False)
 
 
 def inject_card_css() -> None:

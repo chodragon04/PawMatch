@@ -90,9 +90,8 @@ def test_home_shows_count_and_nearby_shelters_by_region():
     at.radio(key="home_mode").set_value(PICK_REGION).run()
     at.selectbox(key="home_region").set_value("경기도").run()
     assert not at.exception
-    page = texts(at)
-    assert "#### 수원시 동물보호센터" in page
-    assert page.index("수원시 동물보호센터") < page.index("부산 보호소")  # 경기도 안 보호소가 먼저
+    shelters = [h.value for h in at.subheader]  # 보호소 이름은 소제목(h3)
+    assert shelters[:2] == ["수원시 동물보호센터", "부산 보호소"]  # 경기도 안 보호소가 먼저
 
 
 def test_browse_filters_by_region():
