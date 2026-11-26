@@ -61,3 +61,23 @@ def test_a11y_script_marks_language_tab_and_korean_labels():
     assert 'doc.lang = "ko"' in script and "aria-current" in script
     assert '"Upload": "사진 고르기"' in script and '"Take Photo": "사진 찍기"' in script
     assert "__" + "LABELS__" not in script  # 자리표시가 모두 채워짐
+
+
+def test_a11y_script_shows_drop_hint_only_on_pc():
+    from pawmatch.ui import UPLOAD_LIMIT_TEXT, UPLOAD_LIMIT_TEXT_PC, a11y_script
+
+    script = a11y_script(0)
+    assert "(hover: hover) and (pointer: fine)" in script  # 마우스가 있는 기기에서만
+    assert UPLOAD_LIMIT_TEXT_PC.startswith("여기로 끌어다 놓아도 돼요") and UPLOAD_LIMIT_TEXT in UPLOAD_LIMIT_TEXT_PC
+    assert "__LIMIT" not in script  # 자리표시가 모두 채워짐
+
+
+def test_carousel_works_with_keyboard():
+    from pawmatch.ui import carousel_html
+
+    dog = {"desertionNo": "1", "kindNm": "믹스견", "popfile1": "https://a/1.jpg", "popfile2": "https://a/2.jpg"}
+    page = carousel_html(dog, "c1")
+    assert page.count('tabindex="0" role="button"') == 2  # 썸네일을 Tab으로 고를 수 있음
+    assert 'alt="사진 2 보기"' in page
+    assert "ArrowRight" in page and "ArrowLeft" in page
+    assert 'data-pm-name="믹스견' in page  # 상세 창 하트도 아이 이름을 읽어 줌

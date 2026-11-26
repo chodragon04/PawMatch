@@ -36,3 +36,7 @@ def test_card_photo_has_heart_even_without_photos():
 def test_detail_carousel_has_heart():
     assert 'data-pm-fav="123"' in carousel_html({"desertionNo": "123", "popfile1": "https://a/b.jpg"}, "d")
     assert 'data-pm-fav="123"' in carousel_html({"desertionNo": "123"}, "e")  # 사진이 없어도 찜은 가능
+
+
+def test_heart_has_hover_title_for_pc():
+    assert 'title="찜하기"' in heart_button_html("1")

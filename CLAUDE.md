@@ -24,4 +24,5 @@
 - 테스트: `pip install -r requirements-dev.txt && pytest`
 - 로컬 실행: `streamlit run app.py`
   백그라운드로 띄울 때 `pkill -f "…"`의 패턴이 같은 명령줄에 있으면 셸 자신이 종료되므로 PID 파일로 종료합니다.
-- 화면 확인은 Playwright(Node 버전)로 합니다. 휴대폰 크기(iPhone 13)도 확인합니다.
+- 화면 확인은 Playwright(Node 버전)로 합니다. 휴대폰(iPhone 13)과 PC(1280px, 넓은 화면 1920px)를 둘 다 확인합니다.
+  화면을 바꾸면 두 크기 모두에서 글자·버튼이 겹치거나 잘리지 않는지, 칸이 지나치게 늘어나지 않는지 봅니다.

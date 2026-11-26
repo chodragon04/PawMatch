@@ -128,10 +128,20 @@ CARD_COLUMNS = 4  # PC에서 한 줄에 놓는 카드 수 (모든 화면 같음)
 
 # 카드 배치: PC는 한 줄에 4장, 휴대폰(640px 이하)은 작은 카드를 한 줄에 2장 (사진 위, 글 아래).
 # 매칭 이유 같은 메모는 휴대폰에서 세 줄까지만 보이고, 전체는 '자세히 보기'에 나옵니다.
+# key: 카드 pm_card_…, 카드 안 메모 pm_cnotes_…, 버튼 pm_cbtn_… (카드 선택자가 안쪽 칸까지 잡지 않게 이름을 나눔)
 CARD_CSS = """
 <style>
-[class*="st-key-pm_card_"] { gap: 0.45rem !important; }
-[class*="st-key-pm_card_"] [data-testid="stMarkdownContainer"] p { margin-bottom: 0; }
+/* 같은 줄의 카드는 높이를 맞추고, '자세히 보기'는 카드 맨 아래에 둡니다. (PC에서 버튼 줄이 들쭉날쭉하지 않게) */
+[class*="st-key-pm_grid_"] [data-testid="stColumn"] > [data-testid="stVerticalBlock"] { height: 100%; }
+[class*="st-key-pm_grid_"] [data-testid="stColumn"] > [data-testid="stVerticalBlock"] > [data-testid="stLayoutWrapper"] {
+  flex: 1 1 auto; }
+[class*="st-key-pm_card_"] { gap: 0.45rem !important; height: 100%; }
+[class*="st-key-pm_cbtn_"] { margin-top: auto; }
+/* 글 사이 여백을 줄임. Streamlit은 글 아래 여백(1rem)을 음수 여백(-1rem)으로 되돌리므로 둘 다 없애야 겹치지 않음 */
+[class*="st-key-pm_card_"] [data-testid="stMarkdownContainer"],
+[class*="st-key-pm_card_"] [data-testid="stCaptionContainer"] { margin-bottom: 0 !important; }
+[class*="st-key-pm_card_"] [data-testid="stMarkdownContainer"] p,
+[class*="st-key-pm_card_"] [data-testid="stCaptionContainer"] p { margin-bottom: 0; }
 @media (max-width: 640px) {
   [class*="st-key-pm_grid_"] [data-testid="stHorizontalBlock"] { flex-wrap: wrap !important; flex-direction: row !important;
                                                                  gap: 0.6rem !important; }
@@ -140,8 +150,8 @@ CARD_CSS = """
   [class*="st-key-pm_card_"] { padding: 0.6rem !important; }
   [class*="st-key-pm_card_"] [data-testid="stMarkdownContainer"] p { font-size: 0.95rem; }
   [class*="st-key-pm_card_"] [data-testid="stCaptionContainer"] p { font-size: 0.8rem; line-height: 1.35; }
-  [class*="_notes"] [data-testid="stCaptionContainer"] p { display: -webkit-box; -webkit-line-clamp: 3;
-                                                           -webkit-box-orient: vertical; overflow: hidden; }
+  [class*="st-key-pm_cnotes_"] [data-testid="stCaptionContainer"] p { display: -webkit-box; -webkit-line-clamp: 3;
+                                                                      -webkit-box-orient: vertical; overflow: hidden; }
 }
 </style>
 """
@@ -167,9 +177,9 @@ def _card_body(
     badges = [b for b in (badge, status_badge(adoption_status(dog.get("noticeEdt")))) if b]
     st.markdown(" ".join(badges))
     if notes:
-        with st.container(key=f"{key}_notes"):
+        with st.container(key=key.replace("pm_card_", "pm_cnotes_", 1)):
             st.caption("  \n".join(notes))
-    detail_button(dog, locator, key=f"{key}_detail", distance_km=distance_km, **extra)
+    detail_button(dog, locator, key=key.replace("pm_card_", "pm_cbtn_", 1), distance_km=distance_km, **extra)
 
 
 def render_dog_cards(

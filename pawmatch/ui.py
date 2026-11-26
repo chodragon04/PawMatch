@@ -118,6 +118,8 @@ CAROUSEL_CSS = """
 .pm-carousel .pm-thumb { flex: 0 0 auto; width: 4rem; height: 3rem; object-fit: cover; border-radius: 0.3rem;
                          cursor: pointer; opacity: 0.55; border: 2px solid transparent; }
 .pm-carousel .pm-thumb.pm-on { opacity: 1; border-color: var(--pm-orange-icon); }
+.pm-carousel .pm-nav:focus-visible, .pm-carousel .pm-thumb:focus-visible { outline: 3px solid var(--pm-orange-icon);
+                                                                            outline-offset: 2px; opacity: 1; }
 .pm-carousel.pm-single .pm-nav, .pm-carousel.pm-single .pm-count,
 .pm-carousel.pm-single .pm-thumbs { display: none; }
 .pm-carousel .pm-fail { display: none; position: absolute; inset: 0; flex-direction: column; align-items: center;
@@ -160,7 +162,16 @@ _CAROUSEL_JS = """
     if (s.complete && s.naturalWidth === 0) s.dataset.broken = "1";
   });
   thumbs.forEach(function (t, i) {
-    t.addEventListener("click", function () { var ok = alive(); show(ok.indexOf(slides[i])); });
+    function pick() { var ok = alive(); show(ok.indexOf(slides[i])); }
+    t.addEventListener("click", pick);
+    t.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); }
+    });
+  });
+  // PC 키보드: 캐러셀 안(넘김 버튼·썸네일·하트)에 포커스가 있으면 ←/→로 사진을 넘깁니다.
+  box.addEventListener("keydown", function (e) {
+    if (e.key === "ArrowLeft") { e.preventDefault(); show(current - 1); }
+    if (e.key === "ArrowRight") { e.preventDefault(); show(current + 1); }
   });
   box.querySelector(".pm-prev").addEventListener("click", function () { show(current - 1); });
   box.querySelector(".pm-next").addEventListener("click", function () { show(current + 1); });
@@ -187,7 +198,7 @@ def carousel_html(dog: dict, element_id: str) -> str:
     fail = f'<div class="pm-fail"><b>{PHOTO_FAIL_TITLE}</b><small>{PHOTO_FAIL_DETAIL}</small></div>'
     # 상세 창에도 하트(찜) 버튼. 창은 카드와 따로 그려질 수 있어 하트 동작 코드도 같이 넣습니다(한 번만 등록됨).
     dog_id = dog.get("desertionNo")
-    heart = (FAVORITE_CSS + heart_button_html(dog_id) + FAVORITE_JS + PAINT_JS) if dog_id else ""
+    heart = (FAVORITE_CSS + heart_button_html(dog_id, dog_label(dog)) + FAVORITE_JS + PAINT_JS) if dog_id else ""
     if not urls:
         return f'{CAROUSEL_CSS}<div class="pm-carousel pm-failed" id="{eid}"><div class="pm-stage">{fail}{heart}</div></div>'
 
@@ -197,7 +208,9 @@ def carousel_html(dog: dict, element_id: str) -> str:
         for i, u in enumerate(urls)
     )
     thumbs = "".join(
-        f'<img class="pm-thumb" src="{html.escape(u, quote=True)}" alt="" referrerpolicy="no-referrer">' for u in urls
+        f'<img class="pm-thumb" src="{html.escape(u, quote=True)}" alt="사진 {i + 1} 보기" tabindex="0" role="button" '
+        f'referrerpolicy="no-referrer">'
+        for i, u in enumerate(urls)
     )
     return (
         f'{CAROUSEL_CSS}<div class="pm-carousel" id="{eid}">'
@@ -240,8 +253,18 @@ button[data-variant="pills"] { min-height: 2.75rem; }
 .st-key-pm_nav [data-testid="stVerticalBlock"], .st-key-pm_nav [data-testid="stHorizontalBlock"] { flex: 0 0 auto !important; }
 .st-key-pm_nav a[data-testid="stPageLink-NavLink"] span[data-testid="stIconMaterial"] { font-size: 1.6rem; width: 1.6rem !important; height: 1.6rem !important; line-height: 1; color: var(--pm-muted); }
 .st-key-pm_nav a[data-testid="stPageLink-NavLink"] p { font-size: 0.75rem; line-height: 1.1; color: var(--pm-muted); margin: 0; }
+/* PC 키보드(Tab)로 링크에 왔을 때 위치가 보이게 (Streamlit 기본은 표시가 없음) */
+a[data-testid="stPageLink-NavLink"]:focus-visible { outline: 3px solid var(--pm-orange-icon) !important; outline-offset: 2px; }
+/* PC에서 마우스를 올리면 하단 탭에 옅은 배경 (휴대폰은 마우스가 없어 해당 없음) */
+@media (hover: hover) {
+  .st-key-pm_nav a[data-testid="stPageLink-NavLink"]:hover { background: var(--pm-peach) !important; }
+  .st-key-pm_nav a[data-testid="stPageLink-NavLink"]:hover p,
+  .st-key-pm_nav a[data-testid="stPageLink-NavLink"]:hover span[data-testid="stIconMaterial"] { color: var(--pm-text); }
+}
 /* 위쪽 메뉴 줄이 없어졌으니 위 여백을 줄이고, 내용이 하단 탭에 가려지지 않게 아래 여백을 둡니다. */
 [data-testid="stMainBlockContainer"] { padding-top: 3.5rem !important; padding-bottom: 6rem !important; }
+/* 넓은 PC 화면에서 입력칸·카드가 끝까지 늘어나지 않게 내용 폭을 1280px(좌우 여백 포함)까지로 하고 가운데에 둡니다. */
+[data-testid="stMainBlockContainer"] { max-width: 1280px; margin-left: auto; margin-right: auto; }
 </style>
 """.replace("__ROOT__", ROOT_CSS)
 
@@ -255,10 +278,11 @@ NAV_ACTIVE_CSS = """
 
 # Streamlit Community Cloud는 공개 앱 화면 오른쪽 아래에 만든 사람 사진과 배지(약 115x46px)를 띄웁니다.
 # 앱 바깥(부모 화면)에 있어서 숨길 수 없으므로, 좁은 화면에서는 탭을 왼쪽으로 모아 배지 자리를 비워 둡니다.
-# (넓은 화면에서는 탭이 가운데에 모여 있어 겹치지 않음)
+# (넓은 화면에서는 탭이 가운데에 모여 있어 겹치지 않음. 탭 오른쪽 끝 = 폭/2 + 280px, 배지 왼쪽 끝 ≈ 폭 - 131px
+#  이므로 폭 822px 이하에서 겹침 → 여유를 두고 860px까지 왼쪽으로 모음)
 NAV_CLOUD_BADGE_CSS = """
 <style>
-@media (max-width: 800px) {
+@media (max-width: 860px) {
   .st-key-pm_nav { padding-right: 120px !important; }
   .st-key-pm_nav [data-testid="stHorizontalBlock"] { margin: 0 !important; }
 }
@@ -280,6 +304,7 @@ KOREAN_LABELS = {
     "Clear photo": "다시 찍기",
 }
 UPLOAD_LIMIT_TEXT = "10MB까지 · JPG, PNG, WEBP"  # 원래: '10MB per file • JPG, PNG, WEBP'
+UPLOAD_LIMIT_TEXT_PC = "여기로 끌어다 놓아도 돼요 · " + UPLOAD_LIMIT_TEXT  # 마우스가 있는 PC에서만
 
 # 접근성 보정: 페이지 언어(한국어), 하단 탭의 지금 화면 표시(aria-current), 영어 글자 한국어로.
 # Streamlit이 화면을 다시 그릴 때마다 되돌아가므로, 바뀔 때마다 다시 맞춥니다. (한 번만 등록)
@@ -289,7 +314,8 @@ A11Y_JS = """
   window.__pmNavActive = __ACTIVE__;
   if (window.__pmA11y) { window.__pmA11yApply && window.__pmA11yApply(); return; }
   window.__pmA11y = true;
-  var LABELS = __LABELS__, LIMIT = __LIMIT__;
+  var LABELS = __LABELS__, LIMIT = __LIMIT__, LIMIT_PC = __LIMIT_PC__;
+  var PC = window.matchMedia && window.matchMedia("(hover: hover) and (pointer: fine)").matches;
   function apply() {
     var doc = document.documentElement;
     if (doc.lang !== "ko") doc.lang = "ko";
@@ -301,7 +327,7 @@ A11Y_JS = """
       if (LABELS[t]) el.textContent = LABELS[t];
     });
     document.querySelectorAll("[data-testid=stFileUploaderDropzoneInstructions] span").forEach(function (el) {
-      if (/per file/.test(el.textContent)) el.textContent = LIMIT;
+      if (/per file/.test(el.textContent)) el.textContent = PC ? LIMIT_PC : LIMIT;
     });
     document.querySelectorAll("[data-testid=stFileUploaderDropzoneInput]").forEach(function (el) {
       if (el.getAttribute("aria-label") === "file upload") el.setAttribute("aria-label", "사진 파일 고르기");
@@ -335,6 +361,7 @@ def a11y_script(active: int) -> str:
     return (
         A11Y_JS.replace("__ACTIVE__", str(int(active)))
         .replace("__LABELS__", json.dumps(KOREAN_LABELS, ensure_ascii=False))
+        .replace("__LIMIT_PC__", json.dumps(UPLOAD_LIMIT_TEXT_PC, ensure_ascii=False))
         .replace("__LIMIT__", json.dumps(UPLOAD_LIMIT_TEXT, ensure_ascii=False))
     )
 
