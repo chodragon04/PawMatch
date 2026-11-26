@@ -14,11 +14,6 @@ page_header("찜한 아이")
 inject_card_css()
 data = load_data_or_stop()
 
-# 목록을 읽는 보이지 않는 칸이 화면에 빈 자리를 만들지 않게 높이를 0으로 (동작에는 영향 없음)
-st.html("""<style>
-[data-testid="stElementContainer"]:has(iframe[title="streamlit_js_eval.streamlit_js_eval"]) {
-  height: 0 !important; min-height: 0 !important; overflow: hidden; margin: 0 !important; }
-</style>""")
 raw = streamlit_js_eval(js_expressions=F.READ_JS, key=f"favorites_read_{st.session_state.get(VISIT_KEY, 0)}")
 if raw is None:  # 브라우저에서 아직 값을 못 받음 (곧 다시 그려짐)
     st.caption("찜 목록을 불러오는 중...")

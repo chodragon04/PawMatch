@@ -94,6 +94,27 @@ def pick_region(key: str) -> tuple[float, float]:
     return REGION_CENTERS[sido]
 
 
+def request_my_location() -> tuple[float, float] | str | None:
+    """브라우저에서 내 위치를 받습니다. 기억해 둔 위치가 있으면 그것을 씁니다.
+
+    돌려주는 값: (위도, 경도) / 아직 기다리는 중이면 None / 받지 못했으면 오류 문구(str).
+    """
+    remembered = remembered_location()
+    if remembered is not None:
+        return remembered[0], remembered[1]
+    request_no = st.session_state.get(_REQUEST_NO_KEY, 0)
+    loc = get_geolocation(component_key=f"my_geolocation_{request_no}")
+    if loc is None:
+        return None
+    if "error" in loc:
+        return (loc.get("error") or {}).get("message", "") or "알 수 없는 오류"
+    coords = loc.get("coords") or {}
+    if coords.get("latitude") is None or coords.get("longitude") is None:
+        return None
+    remember_location(coords["latitude"], coords["longitude"])
+    return coords["latitude"], coords["longitude"]
+
+
 def pick_origin(key: str = "origin") -> tuple[float, float] | None:
     """사용자가 고른 방식으로 기준 위치(위도, 경도)를 정합니다. 정하지 못하면 None."""
     mode = st.radio(
@@ -119,17 +140,11 @@ def pick_origin(key: str = "origin") -> tuple[float, float] | None:
         return lat, lng
 
     st.caption("위치는 가까운 보호소를 찾는 데만 쓰고 저장하지 않아요.")
-    request_no = st.session_state.get(_REQUEST_NO_KEY, 0)
-    loc = get_geolocation(component_key=f"my_geolocation_{request_no}")
-    if loc is None:
+    got = request_my_location()
+    if got is None:
         st.info("위치 권한을 허용하거나 '지역 선택'을 눌러 주세요.")
         return None
-    if "error" in loc:
-        message = (loc.get("error") or {}).get("message", "")
-        st.warning(f"위치를 가져오지 못했어요. '지역 선택'을 이용해 주세요. ({message})")
+    if isinstance(got, str):
+        st.warning(f"위치를 가져오지 못했어요. '지역 선택'을 이용해 주세요. ({got})")
         return None
-    coords = loc.get("coords") or {}
-    if coords.get("latitude") is None or coords.get("longitude") is None:
-        return None
-    remember_location(coords["latitude"], coords["longitude"])
-    return coords["latitude"], coords["longitude"]
+    return got

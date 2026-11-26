@@ -102,3 +102,11 @@ def test_sort_by_fit_uses_scores_then_recent():
     assert scores == sorted(scores, reverse=True)
     assert ordered[-2:] == ["3", "4"]  # 아파트에 대형견(3), 오래 혼자 두기 어려운 60일 미만 강아지(4)가 뒤로
     assert ids(B.sort_dogs(DOGS, B.FIT, TODAY)) == ids(B.sort_dogs(DOGS, B.RECENT, TODAY))  # 점수가 없으면 최근순
+
+
+def test_sort_nearest_puts_unknown_distance_last():
+    distances = {"1": 12.0, "2": None, "3": 3.5, "4": 12.0}
+    # 가까운 순, 거리가 같으면 최근 등록순(4가 1보다 최근), 거리를 모르는 아이는 맨 뒤
+    assert ids(B.sort_dogs(DOGS, B.NEAREST, TODAY, distances=distances)) == ["3", "4", "1", "2"]
+    # 기준 위치가 없으면(거리 없음) 최근 등록순
+    assert ids(B.sort_dogs(DOGS, B.NEAREST, TODAY)) == ids(B.sort_dogs(DOGS, B.RECENT, TODAY))
