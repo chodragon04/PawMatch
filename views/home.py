@@ -22,7 +22,7 @@ def render_shelter_groups(groups: list[dict], area: tuple[str, str] | None = Non
     for i, group in enumerate(groups[:count]):
         dogs = group["dogs"]
         with st.container(border=True):
-            st.markdown(f"#### {group['name']}")
+            st.subheader(group["name"], anchor=False)
             distance = group["distance_km"]
             info = [f":material/location_on: {distance:.1f}km" if distance is not None else "거리 정보 없음", f"아이들 {len(dogs)}마리"]
             if group["in_area"] and area:
@@ -68,7 +68,7 @@ SHORTCUT_CSS = """
 
 def render_shortcuts() -> None:
     st.html(SHORTCUT_CSS)
-    st.markdown("#### 이렇게도 찾아보세요")
+    st.header("이렇게도 찾아보세요", anchor=False)
     for i, (col, (path, icon, title, text)) in enumerate(zip(st.columns(len(SHORTCUTS)), SHORTCUTS)):
         with col, st.container(border=True, key=f"pm_short_{i}", gap=None):
             st.page_link(path, label=title, icon=icon)
@@ -103,7 +103,7 @@ with about, st.popover("소개", icon=":material/info:", type="tertiary"):
 st.markdown(f"지금 가족을 기다리는 아이들 **:orange[{len(dogs):,}마리]**")
 
 inject_card_css()
-st.markdown("#### 가까운 보호소의 아이들")
+st.header("가까운 보호소의 아이들", anchor=False)
 
 origin = pick_origin("home")
 

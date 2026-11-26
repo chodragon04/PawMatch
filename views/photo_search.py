@@ -69,7 +69,6 @@ with st.container(border=True):
     upload_tab, camera_tab = st.tabs([":material/image: 사진 올리기", ":material/photo_camera: 카메라로 찍기"])
     uploaded = upload_tab.file_uploader(
         "강아지 사진", type=UPLOAD_TYPES, key="photo_upload", label_visibility="collapsed",
-        help="강아지 얼굴과 몸이 잘 보이는 사진일수록 잘 찾아요. 올린 사진은 저장하지 않아요.",
     )  # fmt: skip
     taken = None
     with camera_tab:
@@ -88,6 +87,11 @@ with st.container(border=True):
 
 photo = uploaded or taken
 if photo is None:
+    # 아직 사진이 없을 때: 잘 찾는 사진 고르는 법 (예전에는 도움말(?) 안에 숨어 있었음)
+    st.caption(
+        ":material/tips_and_updates: 강아지 얼굴과 몸이 크게 나온 사진일수록 잘 찾아요. "
+        "한 장에 한 마리만 나오면 더 좋아요.  \n:material/lock: 올린 사진은 저장하지 않아요."
+    )
     st.stop()
 
 try:
@@ -111,7 +115,7 @@ preview, summary = st.columns([1, 3], vertical_alignment="center")
 preview.image(photo, caption="올린 사진", width="stretch")
 with summary:
     where = "전국" if sido == WHOLE_COUNTRY else sido
-    st.subheader(f"생김새가 비슷한 아이 {len(results)}마리")
+    st.header(f"생김새가 비슷한 아이 {len(results)}마리", anchor=False)
     pending = len(allowed) - len(searchable)
     st.caption(
         f"{where} {len(searchable):,}마리 중에서 찾았어요"
