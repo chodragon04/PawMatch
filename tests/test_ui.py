@@ -81,3 +81,13 @@ def test_carousel_works_with_keyboard():
     assert 'alt="사진 2 보기"' in page
     assert "ArrowRight" in page and "ArrowLeft" in page
     assert 'data-pm-name="믹스견' in page  # 상세 창 하트도 아이 이름을 읽어 줌
+
+
+def test_is_phone_by_user_agent():
+    from pawmatch.ui import is_phone
+
+    assert is_phone("Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)")
+    assert is_phone("Mozilla/5.0 (Linux; Android 14; SM-S918N) AppleWebKit/537.36 Mobile Safari/537.36")
+    assert not is_phone("Mozilla/5.0 (Linux; Android 14; SM-X710) AppleWebKit/537.36 Safari/537.36")  # 태블릿
+    assert not is_phone("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+    assert not is_phone("")  # 모르면 PC로 봄

@@ -105,12 +105,28 @@ def test_browse_filters_by_region():
 
 def test_match_survey_gives_ranked_results():
     at = open_page("views/match.py")
+    assert "답변 바꾸기" not in [e.label for e in at.expander]  # 처음에는 설문이 펼쳐져 있음
     at.radio(key="match_mode").set_value(PICK_REGION).run()
     submit = next(b for b in at.button if "나와 잘 맞는 아이 찾기" in b.label)
     submit.click().run()
     assert not at.exception
     assert "나와 잘 맞는 아이" in texts(at)
     assert "적합도" in texts(at)
+    # 제출한 뒤에는 답변을 접어 두고(결과 먼저) 요약 칩으로 보여줌
+    assert "답변 바꾸기" in [e.label for e in at.expander]
+    assert ":gray-badge[서울특별시 기준]" in texts(at) and ":gray-badge[아파트·빌라]" in texts(at)
+
+
+def test_browse_shows_chosen_conditions_as_chips():
+    at = open_page("views/browse.py")
+    at.selectbox(key="browse_sido").set_value("부산광역시").run()
+    at.text_input(key="browse_keyword").set_value("온순").run()
+    assert not at.exception
+    page = texts(at)
+    assert ":gray-badge[부산광역시]" in page and ":gray-badge[‘온순’]" in page
+    reset = next(b for b in at.button if b.label == "초기화")  # 칩 옆 초기화
+    reset.click().run()
+    assert "조건에 맞는 아이 5마리" in texts(at)
 
 
 def test_photo_search_page_opens_with_index():

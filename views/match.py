@@ -9,10 +9,10 @@ from pawmatch import matching as M
 from pawmatch import state as S
 from pawmatch import traits as T
 from pawmatch.detail import render_dog_cards
-from pawmatch.display import score_badge
+from pawmatch.display import chips_markdown, score_badge
 from pawmatch.geo import ShelterLocator, sort_by_distance
-from pawmatch.location import pick_origin
-from pawmatch.ui import inject_card_css, load_data_or_stop, page_header
+from pawmatch.location import MY_LOCATION, pick_origin, selected_area
+from pawmatch.ui import inject_card_css, load_data_or_stop, page_header, scroll_to
 
 PAGE_SIZE = 12  # 한 번에 보여줄 추천 수
 MAX_RESULTS = 60  # '더 보기'로 볼 수 있는 최대 추천 수
@@ -22,6 +22,9 @@ DISTANCE_OPTIONS = {"상관없음": None, "10km 이내": 10.0, "30km 이내": 30
 SEX_LABELS = {"M": "수컷", "F": "암컷"}
 K = S.match_key  # 입력칸 key: 다른 화면에 갔다 와도 값이 남도록 key와 persist_state를 줍니다
 PREF_KEYS = [K("sizes"), K("ages"), K("sex"), K("breeds")]
+SUBMITS = "match_submits"  # 제출 횟수: 답변 칸을 다시 접고, 결과로 스크롤할 때 씀
+SCROLL_TO_RESULTS = "match_scroll_to_results"
+RESULTS_KEY = "pm_match_results"
 
 
 def survey_form(max_km: float | None, breeds: list[tuple[str, int]]) -> M.Survey | None:
@@ -83,6 +86,25 @@ def survey_form(max_km: float | None, breeds: list[tuple[str, int]]) -> M.Survey
     )  # fmt: skip
 
 
+def answer_labels(survey: M.Survey, distance_label: str) -> list[str]:
+    """답변 요약 칩: 답변 칸을 접어 둬도 무엇으로 추천했는지 보이게."""
+    area = selected_area(S.MATCH)
+    if st.session_state.get(K("mode"), MY_LOCATION) == MY_LOCATION:
+        where = "내 위치 기준"
+    else:
+        where = f"{area[0]} {area[1] or ''}".strip() + " 기준" if area else "지역 기준"
+    labels = [where] + ([distance_label] if DISTANCE_OPTIONS.get(distance_label) else [])
+    labels += [M.HOME_LABELS[survey.home], f"산책 {M.WALK_LABELS[survey.walk]}", f"집 비움 {M.AWAY_LABELS[survey.away]}"]
+    labels += ["처음 키워요" if survey.first_dog else "키워 본 적 있어요"]
+    labels += ["어린 아이" if survey.has_kids else None, "다른 반려동물" if survey.has_pets else None]
+    labels += ["치료 필요해도 괜찮아요" if survey.health_ok else None]
+    labels += [T.SIZE_LABELS[x] for x in survey.pref_sizes] + [T.AGE_LABELS[a] for a in survey.pref_ages]
+    labels += [SEX_LABELS[survey.pref_sex]] if survey.pref_sex in SEX_LABELS else []
+    breeds = list(survey.breeds)
+    labels += breeds if len(breeds) <= 2 else [*breeds[:2], f"품종 {len(breeds) - 2}개 더"]
+    return [x for x in labels if x]
+
+
 def show_more() -> None:
     st.session_state.match_limit = st.session_state.get("match_limit", PAGE_SIZE) + PAGE_SIZE
 
@@ -97,22 +119,35 @@ notice = st.session_state.pop(S.MATCH_NOTICE, None)
 if notice:
     st.success(notice)
 
-st.header("지역", anchor=False)
-origin = pick_origin(S.MATCH)
-distance_label = st.selectbox(
-    "보호소까지 거리", list(DISTANCE_OPTIONS), index=0, disabled=origin is None, key=K("distance"),
-    persist_state=S.PERSIST,
+# 설문을 한 뒤에는 답변 칸(지역·설문)을 접고 요약 칩만 보여서, 결과가 먼저 보이게 합니다.
+answered = st.session_state.get(S.MATCH_SURVEY) is not None
+summary_slot = st.empty()  # 요약 칩 자리 (답변 칸보다 위에 보이게 먼저 자리만 잡음)
+answers = (
+    st.expander("답변 바꾸기", key=f"match_answers_{st.session_state.get(SUBMITS, 0)}", icon=":material/edit:")
+    if answered else st.container()
 )  # fmt: skip
-max_km = DISTANCE_OPTIONS[distance_label] if origin is not None else None
+with answers:
+    st.header("지역", anchor=False)
+    origin = pick_origin(S.MATCH)
+    distance_label = st.selectbox(
+        "보호소까지 거리", list(DISTANCE_OPTIONS), index=0, disabled=origin is None, key=K("distance"),
+        persist_state=S.PERSIST,
+    )  # fmt: skip
+    max_km = DISTANCE_OPTIONS[distance_label] if origin is not None else None
 
-submitted = survey_form(max_km, M.breed_options(data.dogs))
+    submitted = survey_form(max_km, M.breed_options(data.dogs))
 if submitted is not None:
     st.session_state[S.MATCH_SURVEY] = submitted
     st.session_state.match_limit = PAGE_SIZE
+    # 다시 그려서 답변 칸을 접고(새 key) 결과로 스크롤합니다.
+    st.session_state[SUBMITS] = st.session_state.get(SUBMITS, 0) + 1
+    st.session_state[SCROLL_TO_RESULTS] = True
+    st.rerun()
 
 survey: M.Survey | None = st.session_state.get(S.MATCH_SURVEY)
 if survey is None:
     st.stop()
+summary_slot.markdown(chips_markdown(answer_labels(survey, distance_label), max_len=30))
 
 # 위치나 거리 조건이 바뀌면 다시 제출하지 않아도 바로 반영합니다.
 survey = replace(survey, max_km=max_km)
@@ -123,20 +158,21 @@ else:
     ranked = [(dog, None) for dog in data.dogs]
 results = M.rank_dogs(ranked, survey, limit=MAX_RESULTS)
 
-st.divider()
+results_box = st.container(key=RESULTS_KEY)  # 제출 직후 이 칸으로 스크롤
+if st.session_state.pop(SCROLL_TO_RESULTS, False):
+    scroll_to(RESULTS_KEY, st.session_state.get(SUBMITS, 0))
 if not results:
     hint = "보호소까지 거리를 늘리거나 품종을 더 골라 보세요." if survey.breeds else "보호소까지 거리를 늘려 보세요."
-    st.warning(f"조건에 맞는 아이가 없어요. {hint}")
+    results_box.warning(f"조건에 맞는 아이가 없어요. '답변 바꾸기'에서 {hint}")
     st.stop()
 
 limit = min(st.session_state.get("match_limit", PAGE_SIZE), len(results))
-st.header(f"나와 잘 맞는 아이 {limit}마리", anchor=False)
-if survey.breeds:
-    st.caption("품종: " + ", ".join(survey.breeds))
-st.caption(
-    "점수는 참고용이에요. 성격과 건강은 보호소에 확인해 주세요."
-    + ("" if origin is not None else " 위치를 정하면 거리 점수도 더해져요.")
-)
+with results_box:
+    st.header(f"나와 잘 맞는 아이 {limit}마리", anchor=False)
+    st.caption(
+        "점수는 참고용이에요. 성격과 건강은 보호소에 확인해 주세요."
+        + ("" if origin is not None else " 위치를 정하면 거리 점수도 더해져요.")
+    )
 
 shown = results[:limit]
 by_dog = {id(r.dog): r for r in shown}

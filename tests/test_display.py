@@ -93,3 +93,13 @@ def test_format_breed_prefers_full_name_over_generic_kind():
     assert format_breed({"kindNm": "기타", "kindFullNm": "[개] 말티푸"}) == "말티푸"
     assert format_breed({"kindNm": "믹스견"}) == "믹스견"
     assert format_breed({}) == "품종 미상"
+
+
+def test_chips_markdown_strips_markdown_and_keeps_tilde_readable():
+    from pawmatch.display import chips_markdown
+
+    out = chips_markdown(["산책 30분 ~ 1시간", "‘[온순]*’", "", "가" * 40])
+    assert ":gray-badge[산책 30분 ∼ 1시간]" in out  # '~'는 취소선이 되지 않게 바꿈
+    assert "[온순]" not in out and "*" not in out  # 사용자가 쓴 검색어의 마크다운 기호는 뺌
+    assert out.count(":gray-badge[") == 3  # 빈 글은 칩을 만들지 않음
+    assert "가" * 23 + "…" in out  # 긴 글은 줄임

@@ -82,6 +82,22 @@ def score_badge(text: str) -> str:
     return f":orange-badge[{text}]"
 
 
+# 마크다운 기호는 빼고, '~'는 취소선이 되지 않게 비슷한 모양(∼)으로 바꿉니다.
+_CHIP_UNSAFE = str.maketrans({**{c: " " for c in "[]*_`\\:$<>#|"}, "~": "∼"})
+
+
+def chips_markdown(labels: list[str], max_len: int = 24) -> str:
+    """고른 조건 요약 칩(회색 배지)들. 사용자가 쓴 검색어도 들어가서, 마크다운 기호는 빼고 길면 줄입니다."""
+    chips = []
+    for label in labels:
+        text = " ".join(str(label).translate(_CHIP_UNSAFE).split())
+        if len(text) > max_len:
+            text = text[: max_len - 1] + "…"
+        if text:
+            chips.append(f":gray-badge[{text}]")
+    return " ".join(chips)
+
+
 def format_updated(fetched_at: datetime) -> str:
     """데이터를 받은 시각을 한국 시간으로: '11월 3일 14:23 기준'."""
     t = fetched_at.astimezone(KST)
