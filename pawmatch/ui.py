@@ -277,6 +277,46 @@ NAV_ACTIVE_CSS = """
 </style>
 """
 
+# PC(폭 1024px 이상): 아이콘 탭을 화면 위쪽 메뉴 줄로 옮기고, 왼쪽에 'PawMatch'(홈으로)를 둡니다.
+# 휴대폰·태블릿 세로 화면은 지금처럼 하단 탭. 메뉴 줄 안쪽 폭은 본문(1280px, 좌우 5rem 여백)과 맞춥니다.
+# z-index는 Streamlit 위쪽 도구 줄(⋮ 메뉴)보다 한 단계 낮게 해서 ⋮ 버튼을 가리지 않습니다.
+NAV_BRAND_KEY = "pm_brand"
+NAV_TOP_CSS = """
+<style>
+/* 휴대폰: 'PawMatch'와 그 바깥 칸까지 숨겨서 하단 탭 높이가 그대로이게 */
+.st-key-pm_brand, [data-testid="stLayoutWrapper"]:has(> .st-key-pm_brand) { display: none !important; }
+@media (min-width: 1024px) {
+  .st-key-pm_nav { top: 0; bottom: auto; z-index: 999989; border-top: none; border-bottom: 1px solid var(--pm-line);
+                   box-shadow: 0 2px 12px rgba(255, 138, 61, 0.08); flex-direction: row !important;
+                   align-items: center; justify-content: space-between; min-height: 3.75rem;
+                   padding: 0.35rem max(5rem, calc((100vw - 1120px) / 2)) !important; }
+  .st-key-pm_brand, [data-testid="stLayoutWrapper"]:has(> .st-key-pm_brand) {
+    display: flex !important; width: auto !important; flex: 0 0 auto !important; }
+  .st-key-pm_brand a[data-testid="stPageLink-NavLink"] { flex-direction: row !important; gap: 0.35rem;
+                                                         background: transparent !important; padding: 0.25rem 0; }
+  .st-key-pm_brand a[data-testid="stPageLink-NavLink"] p { font-family: "Jua", sans-serif; font-size: 1.45rem;
+                                                           color: var(--pm-text); }
+  .st-key-pm_brand a[data-testid="stPageLink-NavLink"] span[data-testid="stIconMaterial"] {
+    color: var(--pm-orange-icon); font-size: 1.6rem; }
+  .st-key-pm_nav > [data-testid="stLayoutWrapper"], .st-key-pm_nav [data-testid="stHorizontalBlock"] {
+    width: auto !important; max-width: none !important; margin: 0 !important; flex: 0 0 auto !important; gap: 0.25rem !important; }
+  .st-key-pm_nav [data-testid="stColumn"] { flex: 0 0 auto !important; width: auto !important; }
+  .st-key-pm_nav [class*="st-key-pm_nav_"] a[data-testid="stPageLink-NavLink"] { flex-direction: row; gap: 0.4rem;
+                                                                                 padding: 0.45rem 0.8rem; }
+  .st-key-pm_nav [class*="st-key-pm_nav_"] a[data-testid="stPageLink-NavLink"] span[data-testid="stIconMaterial"] {
+    font-size: 1.3rem; width: 1.3rem !important; height: 1.3rem !important; }
+  .st-key-pm_nav [class*="st-key-pm_nav_"] a[data-testid="stPageLink-NavLink"] p { font-size: 0.95rem; }
+  /* Streamlit 위쪽 도구 줄(⋮)은 흰 배경이라 메뉴를 가림 → 투명하게 해서 메뉴 위에 ⋮ 버튼만 보이게 */
+  /* 투명해도 메뉴 위를 덮어 클릭을 막으므로, 클릭은 아래 메뉴로 통과시키고 ⋮ 도구 줄만 클릭되게 */
+  [data-testid="stHeader"], [data-testid="stHeader"] * { pointer-events: none; }
+  [data-testid="stHeader"] { background: transparent !important; }
+  [data-testid="stHeader"] button, [data-testid="stHeader"] a { pointer-events: auto; }
+  /* 메뉴가 위로 갔으니 본문 위 여백을 늘리고 아래 여백(하단 탭 자리)은 줄임 */
+  [data-testid="stMainBlockContainer"] { padding-top: 5rem !important; padding-bottom: 3rem !important; }
+}
+</style>
+"""
+
 # Streamlit Community Cloud는 공개 앱 화면 오른쪽 아래에 만든 사람 사진과 배지(약 115x46px)를 띄웁니다.
 # 앱 바깥(부모 화면)에 있어서 숨길 수 없으므로, 좁은 화면에서는 탭을 왼쪽으로 모아 배지 자리를 비워 둡니다.
 # (넓은 화면에서는 탭이 가운데에 모여 있어 겹치지 않음. 탭 오른쪽 끝 = 폭/2 + 280px, 배지 왼쪽 끝 ≈ 폭 - 131px
@@ -320,7 +360,7 @@ A11Y_JS = """
   function apply() {
     var doc = document.documentElement;
     if (doc.lang !== "ko") doc.lang = "ko";
-    document.querySelectorAll(".st-key-pm_nav a").forEach(function (a, i) {
+    document.querySelectorAll(".st-key-pm_nav [class*='st-key-pm_nav_'] a").forEach(function (a, i) {
       if (i === window.__pmNavActive) { a.setAttribute("aria-current", "page"); } else { a.removeAttribute("aria-current"); }
     });
     document.querySelectorAll("[data-testid=stFileUploaderDropzone] button p, [data-testid=stCameraInputButton]").forEach(function (el) {
@@ -372,9 +412,11 @@ def render_nav_bar(pages: list, current, short_titles: dict[str, str] | None = N
     short_titles = short_titles or {}
     active = next((i for i, page in enumerate(pages) if page.url_path == current.url_path), -1)
     badge = shows_cloud_badge(st.context.url, st.context.is_embedded)
-    st.html(NAV_CSS + NAV_ACTIVE_CSS % {"i": active} + (NAV_CLOUD_BADGE_CSS if badge else ""))
+    st.html(NAV_CSS + NAV_ACTIVE_CSS % {"i": active} + (NAV_CLOUD_BADGE_CSS if badge else "") + NAV_TOP_CSS)
     st.html(a11y_script(active), unsafe_allow_javascript=True)
     with st.container(key="pm_nav"):
+        with st.container(key=NAV_BRAND_KEY):  # PC 위쪽 메뉴에서만 보이는 'PawMatch' (홈으로)
+            st.page_link(pages[0], label="PawMatch", icon=":material/pets:")
         for i, (col, page) in enumerate(zip(st.columns(len(pages)), pages)):
             with col, st.container(key=f"pm_nav_{i}"):
                 st.page_link(page, label=short_titles.get(page.title, page.title), icon=page.icon)
