@@ -8,7 +8,6 @@ from pawmatch.detail import render_dog_cards
 from pawmatch.geo import ShelterLocator
 from pawmatch.ui import inject_card_css, load_data_or_stop, page_header
 
-COLUMNS = 4
 VISIT_KEY = "pm_page_visit"  # app.py가 화면을 옮길 때마다 1씩 올림 → 들어올 때마다 찜 목록을 새로 읽음
 
 page_header("찜한 아이")
@@ -41,4 +40,4 @@ st.caption(
     f"{len(dogs)}마리 · 이 기기의 브라우저에만 저장돼요"
     + (f" · 입양됐거나 공고가 끝난 {gone}마리는 보이지 않아요" if gone else "")
 )
-render_dog_cards(dogs, ShelterLocator(data.shelters), columns=COLUMNS, key_prefix="f")
+render_dog_cards(dogs, ShelterLocator(data.shelters), key_prefix="f")

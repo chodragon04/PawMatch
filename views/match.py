@@ -8,15 +8,14 @@ from pawmatch import browse as B
 from pawmatch import matching as M
 from pawmatch import state as S
 from pawmatch import traits as T
-from pawmatch.detail import detail_button
+from pawmatch.detail import render_dog_cards
 from pawmatch.display import score_badge
 from pawmatch.geo import ShelterLocator, sort_by_distance
 from pawmatch.location import pick_origin
-from pawmatch.ui import inject_card_css, load_data_or_stop, page_header, render_card
+from pawmatch.ui import inject_card_css, load_data_or_stop, page_header
 
 PAGE_SIZE = 12  # 한 번에 보여줄 추천 수
 MAX_RESULTS = 60  # '더 보기'로 볼 수 있는 최대 추천 수
-COLUMNS = 3
 MAX_REASONS, MAX_CAUTIONS = 3, 2
 
 DISTANCE_OPTIONS = {"상관없음": None, "10km 이내": 10.0, "30km 이내": 30.0, "50km 이내": 50.0, "100km 이내": 100.0}
@@ -84,21 +83,6 @@ def survey_form(max_km: float | None, breeds: list[tuple[str, int]]) -> M.Survey
     )  # fmt: skip
 
 
-def render_result(result: M.MatchResult, index: int, locator: ShelterLocator) -> None:
-    with st.container(border=True):
-        render_card(result.dog, distance_km=result.distance_km, key_prefix=f"match{index}")
-        st.markdown(score_badge(f"적합도 {result.score}점"))
-        lines = list(result.reasons[:MAX_REASONS])
-        # 확인해 볼 점: 색만으로 구분하지 않도록 '확인' 표시도 붙입니다
-        lines += [f":orange[**확인** · {c}]" for c in result.cautions[:MAX_CAUTIONS]]
-        if lines:
-            st.caption("\n\n".join(lines))
-        detail_button(
-            result.dog, locator, key=f"detail_{index}_{result.dog.get('desertionNo')}",
-            distance_km=result.distance_km, score=result.score, reasons=result.reasons, cautions=result.cautions,
-        )  # fmt: skip
-
-
 def show_more() -> None:
     st.session_state.match_limit = st.session_state.get("match_limit", PAGE_SIZE) + PAGE_SIZE
 
@@ -155,11 +139,24 @@ st.caption(
 )
 
 shown = results[:limit]
-for start in range(0, len(shown), COLUMNS):
-    cols = st.columns(COLUMNS)
-    for col, (i, result) in zip(cols, enumerate(shown[start : start + COLUMNS], start)):
-        with col:
-            render_result(result, i, locator)
+by_dog = {id(r.dog): r for r in shown}
+
+
+def match_notes(dog: dict) -> list[str]:
+    """카드에 보여줄 잘 맞는 점, 확인해 볼 점 (확인해 볼 점은 색만으로 구분하지 않도록 '확인' 표시)."""
+    r = by_dog[id(dog)]
+    return list(r.reasons[:MAX_REASONS]) + [f":orange[**확인** · {c}]" for c in r.cautions[:MAX_CAUTIONS]]
+
+
+render_dog_cards(
+    [r.dog for r in shown], locator, key_prefix="match",
+    distance_of=lambda dog: by_dog[id(dog)].distance_km,
+    badge=lambda dog: score_badge(f"적합도 {by_dog[id(dog)].score}점"),
+    notes=match_notes,
+    detail_kwargs=lambda dog: {
+        "score": by_dog[id(dog)].score, "reasons": by_dog[id(dog)].reasons, "cautions": by_dog[id(dog)].cautions,
+    },
+)  # fmt: skip
 
 if limit < len(results):
     st.button("추천 더 보기", on_click=show_more, width="stretch")

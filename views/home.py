@@ -2,10 +2,11 @@
 # SPDX-License-Identifier: MIT
 import streamlit as st
 
+from pawmatch.detail import render_dog_cards
 from pawmatch.display import format_updated
 from pawmatch.geo import ShelterLocator, group_by_shelter, sort_by_distance
 from pawmatch.location import pick_origin, selected_area
-from pawmatch.ui import inject_card_css, load_data_or_stop, page_header, render_grid
+from pawmatch.ui import inject_card_css, load_data_or_stop, page_header
 
 LATEST_COUNT = 8  # 위치가 없을 때 보여줄 최근 등록 아이 수
 SHELTERS_STEP = 3  # 한 번에 보여줄 보호소 수
@@ -17,7 +18,7 @@ def show_more_shelters() -> None:
     st.session_state.shelter_count = st.session_state.get("shelter_count", SHELTERS_STEP) + SHELTERS_STEP
 
 
-def render_shelter_groups(groups: list[dict], area: tuple[str, str] | None = None) -> None:
+def render_shelter_groups(groups: list[dict], locator: ShelterLocator, area: tuple[str, str] | None = None) -> None:
     count = st.session_state.get("shelter_count", SHELTERS_STEP)
     for i, group in enumerate(groups[:count]):
         dogs = group["dogs"]
@@ -30,12 +31,12 @@ def render_shelter_groups(groups: list[dict], area: tuple[str, str] | None = Non
             if group["tel"]:
                 info.append(f":material/call: {group['tel']}")
             st.caption(" · ".join(info) + (f"\n\n{group['address']}" if group["address"] else ""))
-            render_grid(dogs[:DOGS_PER_SHELTER], show_shelter=False, key_prefix=f"s{i}")
+            render_dog_cards(dogs[:DOGS_PER_SHELTER], locator, key_prefix=f"s{i}", show_shelter=False)
 
             rest = dogs[DOGS_PER_SHELTER:]
             if rest:
                 with st.expander(f"이 보호소 아이들 {len(rest)}마리 더 보기"):
-                    render_grid(rest[:MORE_DOGS_LIMIT], show_shelter=False, key_prefix=f"s{i}more")
+                    render_dog_cards(rest[:MORE_DOGS_LIMIT], locator, key_prefix=f"s{i}more", show_shelter=False)
                     if len(rest) > MORE_DOGS_LIMIT:
                         st.caption(
                             f"나머지 {len(rest) - MORE_DOGS_LIMIT}마리는 '보호견 둘러보기'에서 확인할 수 있어요."
@@ -116,10 +117,10 @@ if origin is not None:
             st.caption(f"{name} 보호소 먼저, 그다음 가까운 순이에요.")
         else:
             st.caption(f"{name}에는 보호 중인 아이가 없어서 가까운 순으로 보여드려요.")
-    render_shelter_groups(groups, area)
+    render_shelter_groups(groups, locator, area)
 else:
     st.caption("최근 등록된 아이들")
-    render_grid(dogs[:LATEST_COUNT], key_prefix="latest")
+    render_dog_cards(dogs[:LATEST_COUNT], locator, key_prefix="latest")
 
 # 목록을 다 본 사람에게 다른 찾기 방법을 소개 (하단 탭 아이콘만으로는 기능을 알기 어려워서)
 st.divider()

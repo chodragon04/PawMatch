@@ -16,7 +16,6 @@ from pawmatch.regions import load_regions
 from pawmatch.ui import inject_card_css, load_data_or_stop, page_header
 
 PAGE_SIZE = 24  # 한 번에 보여줄 아이 수
-COLUMNS = 4
 WHOLE_COUNTRY, WHOLE_SIDO = "전국", "전체"
 KEY = S.BROWSE  # 이 화면의 입력칸 key 앞에 붙입니다
 KEEP = {"persist_state": S.PERSIST}  # 다른 화면에 갔다 와도 입력값 유지
@@ -190,7 +189,7 @@ def fit_detail(dog: dict) -> dict:
 
 limit = min(st.session_state.get(f"{KEY}limit", PAGE_SIZE), len(found))
 render_dog_cards(
-    B.sort_dogs(found, order, fits=fits)[:limit], ShelterLocator(data.shelters), columns=COLUMNS, key_prefix="b",
+    B.sort_dogs(found, order, fits=fits)[:limit], ShelterLocator(data.shelters), key_prefix="b",
     badge=fit_badge, detail_kwargs=fit_detail,
 )  # fmt: skip
 
