@@ -14,7 +14,7 @@ from pawmatch.api import ApiError
 from pawmatch.colors import ROOT_CSS
 from pawmatch.config import get_api_key
 from pawmatch.data import STORE, WARN_AFTER, Dataset
-from pawmatch.display import adoption_status, format_age, format_breed, format_sex, format_updated, photo_urls, status_badge
+from pawmatch.display import dog_label, format_updated, photo_urls
 from pawmatch.favorites import FAVORITE_CSS, FAVORITE_JS, PAINT_JS, heart_button_html
 
 PHOTO_FAIL_TITLE = "사진을 불러오지 못했어요"
@@ -68,16 +68,18 @@ def photo_html(dog: dict, element_id: str) -> str:
     )
     eid = html.escape(element_id, quote=True)
     dog_id = dog.get("desertionNo")
-    heart = (heart_button_html(dog_id) + PAINT_JS) if dog_id else ""
+    label = dog_label(dog)
+    heart = (heart_button_html(dog_id, label) + PAINT_JS) if dog_id else ""
+    data_label = html.escape(label, quote=True)  # 카드의 '자세히 보기' 버튼 이름에도 씀 (A11Y_JS)
     if not urls:
-        return f'<div class="pm-photo pm-failed" id="{eid}">{fail}{heart}</div>'
+        return f'<div class="pm-photo pm-failed" id="{eid}" data-label="{data_label}">{fail}{heart}</div>'
 
-    alt = html.escape(dog.get("kindFullNm") or dog.get("kindNm") or "보호 중인 강아지", quote=True)
+    alt = html.escape(f"{label} 사진", quote=True)
     srcs = html.escape(json.dumps(urls), quote=True)
     first = html.escape(urls[0], quote=True)
     script = _FALLBACK_JS % {"id": json.dumps(element_id)}
     return (
-        f'<div class="pm-photo" id="{eid}" data-srcs="{srcs}">'
+        f'<div class="pm-photo" id="{eid}" data-label="{data_label}" data-srcs="{srcs}">'
         f'<img src="{first}" alt="{alt}" loading="lazy" referrerpolicy="no-referrer">{fail}{heart}</div>'
         f"{script}"
     )
@@ -304,6 +306,14 @@ A11Y_JS = """
     document.querySelectorAll("[data-testid=stFileUploaderDropzoneInput]").forEach(function (el) {
       if (el.getAttribute("aria-label") === "file upload") el.setAttribute("aria-label", "사진 파일 고르기");
     });
+    document.querySelectorAll("[class*='st-key-pm_card_']").forEach(function (card) {
+      var photo = card.querySelector(".pm-photo[data-label]");
+      if (!photo) return;
+      card.querySelectorAll("[data-testid=stButton] button").forEach(function (b) {
+        var name = b.innerText.trim() + ": " + photo.dataset.label;
+        if (b.getAttribute("aria-label") !== name) b.setAttribute("aria-label", name);
+      });
+    });
     document.querySelectorAll("button[aria-label^='Help for ']").forEach(function (el) {
       el.setAttribute("aria-label", "도움말: " + el.getAttribute("aria-label").slice(9));
     });
@@ -350,25 +360,3 @@ def page_header(title: str) -> None:
 def inject_card_css() -> None:
     """카드 모양과 찜(하트) 버튼 동작을 화면에 넣습니다. 카드를 그리기 전에 한 번 부릅니다."""
     st.html(CARD_CSS + FAVORITE_CSS + FAVORITE_JS, unsafe_allow_javascript=True)
-
-
-def render_card(
-    dog: dict, distance_km: float | None = None, show_shelter: bool = True, key_prefix: str = "pm"
-) -> None:
-    element_id = f"{key_prefix}-photo-{dog.get('desertionNo') or id(dog)}"
-    st.html(photo_html(dog, element_id), unsafe_allow_javascript=True)
-    st.markdown(f"**{format_breed(dog)}**")
-    lines = [f"{format_age(dog.get('age'))} · {format_sex(dog.get('sexCd'))}"]
-    if show_shelter:
-        shelter = dog.get("careNm", "")
-        lines.append(f"{shelter} · {distance_km:.1f}km" if distance_km is not None else shelter)
-    st.caption("\n\n".join(lines))
-    st.markdown(status_badge(adoption_status(dog.get("noticeEdt"))))
-
-
-def render_grid(dogs: list[dict], columns: int = 4, **card_kwargs) -> None:
-    for start in range(0, len(dogs), columns):
-        cols = st.columns(columns)
-        for col, dog in zip(cols, dogs[start : start + columns]):
-            with col:
-                render_card(dog, **card_kwargs)

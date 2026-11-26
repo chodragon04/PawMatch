@@ -33,11 +33,11 @@ def _heart_mask(filled: bool) -> str:
 
 FAVORITE_CSS = """
 <style>
-.pm-fav { position: absolute; left: 0.5rem; bottom: 0.5rem; z-index: 2; width: 2.3rem; height: 2.3rem;
+.pm-fav { position: absolute; left: 0.4rem; bottom: 0.4rem; z-index: 2; width: 2.75rem; height: 2.75rem;
           padding: 0; border: none; border-radius: 50%; background: rgba(255, 255, 255, 0.92);
           box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18); display: flex; align-items: center; justify-content: center;
           cursor: pointer; -webkit-tap-highlight-color: transparent; }
-.pm-fav::before { content: ""; width: 1.35rem; height: 1.35rem; background: var(--pm-muted);
+.pm-fav::before { content: ""; width: 1.5rem; height: 1.5rem; background: var(--pm-muted);
                   -webkit-mask: __OUTLINE__ center / contain no-repeat; mask: __OUTLINE__ center / contain no-repeat; }
 .pm-fav.pm-on::before { background: var(--pm-orange-icon);
                         -webkit-mask: __FILLED__ center / contain no-repeat; mask: __FILLED__ center / contain no-repeat; }
@@ -62,7 +62,8 @@ FAVORITE_JS = """
       var on = ids.indexOf(b.dataset.pmFav) >= 0;
       b.classList.toggle("pm-on", on);
       b.setAttribute("aria-pressed", on ? "true" : "false");
-      b.setAttribute("aria-label", on ? "찜 취소" : "찜하기");
+      var name = b.dataset.pmName ? ": " + b.dataset.pmName : "";
+      b.setAttribute("aria-label", (on ? "찜 취소" : "찜하기") + name);
     });
   }
   window.__pmFavPaint = paint;
@@ -86,10 +87,15 @@ FAVORITE_JS = """
 PAINT_JS = "<script>window.__pmFavPaint && window.__pmFavPaint();</script>"
 
 
-def heart_button_html(dog_id: str) -> str:
-    """카드 사진 위에 올리는 하트 버튼."""
+def heart_button_html(dog_id: str, name: str = "") -> str:
+    """카드 사진 위에 올리는 하트 버튼. name(아이 설명)은 화면 낭독기가 '찜하기: 믹스견, 2016년생…'으로 읽게 합니다."""
     did = html.escape(str(dog_id), quote=True)
-    return f'<button type="button" class="pm-fav" data-pm-fav="{did}" aria-label="찜하기" aria-pressed="false"></button>'
+    label = html.escape(f"찜하기: {name}" if name else "찜하기", quote=True)
+    data_name = f' data-pm-name="{html.escape(name, quote=True)}"' if name else ""
+    return (
+        f'<button type="button" class="pm-fav" data-pm-fav="{did}"{data_name} aria-label="{label}" '
+        f'aria-pressed="false"></button>'
+    )
 
 
 def parse_favorites(raw: str | None) -> list[str]:

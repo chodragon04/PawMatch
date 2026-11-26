@@ -6,14 +6,23 @@ from __future__ import annotations
 
 import html
 import re
-from typing import Callable
+from collections.abc import Callable
 from urllib.parse import quote
 
 import streamlit as st
 
-from pawmatch.display import adoption_status, dog_facts, format_breed, format_shelter_hours, score_badge, status_badge
+from pawmatch.display import (
+    adoption_status,
+    dog_facts,
+    format_age,
+    format_breed,
+    format_sex,
+    format_shelter_hours,
+    score_badge,
+    status_badge,
+)
 from pawmatch.geo import ShelterLocator
-from pawmatch.ui import carousel_html, render_card
+from pawmatch.ui import carousel_html, photo_html
 
 MASKED_TEL_RE = re.compile(r"^\*+$")
 
@@ -115,25 +124,84 @@ def detail_button(dog: dict, locator: ShelterLocator, key: str, **detail_kwargs)
         open_detail(dog, locator.shelter_info(dog), **detail_kwargs)
 
 
+CARD_COLUMNS = 4  # PC에서 한 줄에 놓는 카드 수 (모든 화면 같음)
+
+# 카드 배치: PC는 한 줄에 4장, 휴대폰(640px 이하)은 작은 카드를 한 줄에 2장 (사진 위, 글 아래).
+# 매칭 이유 같은 메모는 휴대폰에서 세 줄까지만 보이고, 전체는 '자세히 보기'에 나옵니다.
+CARD_CSS = """
+<style>
+[class*="st-key-pm_card_"] { gap: 0.45rem !important; }
+[class*="st-key-pm_card_"] [data-testid="stMarkdownContainer"] p { margin-bottom: 0; }
+@media (max-width: 640px) {
+  [class*="st-key-pm_grid_"] [data-testid="stHorizontalBlock"] { flex-wrap: wrap !important; flex-direction: row !important;
+                                                                 gap: 0.6rem !important; }
+  [class*="st-key-pm_grid_"] [data-testid="stColumn"] { flex: 0 0 calc(50% - 0.3rem) !important;
+                                                        width: calc(50% - 0.3rem) !important; min-width: 0 !important; }
+  [class*="st-key-pm_card_"] { padding: 0.6rem !important; }
+  [class*="st-key-pm_card_"] [data-testid="stMarkdownContainer"] p { font-size: 0.95rem; }
+  [class*="st-key-pm_card_"] [data-testid="stCaptionContainer"] p { font-size: 0.8rem; line-height: 1.35; }
+  [class*="_notes"] [data-testid="stCaptionContainer"] p { display: -webkit-box; -webkit-line-clamp: 3;
+                                                           -webkit-box-orient: vertical; overflow: hidden; }
+}
+</style>
+"""
+
+
+def _card_body(
+    dog: dict,
+    locator: ShelterLocator,
+    key: str,
+    distance_km: float | None,
+    show_shelter: bool,
+    badge: str | None,
+    notes: list[str],
+    extra: dict,
+) -> None:
+    st.html(photo_html(dog, f"{key}-photo"), unsafe_allow_javascript=True)
+    st.markdown(f"**{format_breed(dog)}**")
+    lines = [f"{format_age(dog.get('age'))} · {format_sex(dog.get('sexCd'))}"]
+    if show_shelter:
+        shelter = (dog.get("careNm") or "").strip()
+        lines.append(f"{shelter} · {distance_km:.1f}km" if distance_km is not None else shelter)
+    st.caption("  \n".join(lines))
+    badges = [b for b in (badge, status_badge(adoption_status(dog.get("noticeEdt")))) if b]
+    st.markdown(" ".join(badges))
+    if notes:
+        with st.container(key=f"{key}_notes"):
+            st.caption("  \n".join(notes))
+    detail_button(dog, locator, key=f"{key}_detail", distance_km=distance_km, **extra)
+
+
 def render_dog_cards(
     dogs: list[dict],
     locator: ShelterLocator,
-    columns: int = 4,
     key_prefix: str = "dog",
+    *,
+    columns: int = CARD_COLUMNS,
+    show_shelter: bool = True,
+    distance_of: Callable[[dict], float | None] | None = None,
     badge: Callable[[dict], str | None] | None = None,
+    notes: Callable[[dict], list[str]] | None = None,
     detail_kwargs: Callable[[dict], dict] | None = None,
 ) -> None:
-    """유기견 카드 그리드. 카드마다 '자세히 보기' 버튼이 있습니다.
+    """유기견 카드 그리드. 모든 화면이 같은 카드를 씁니다.
 
-    badge(dog)는 카드에 붙일 마크다운 배지(예: 적합도), detail_kwargs(dog)는 상세 창에 넘길 값입니다.
+    카드: 사진(하트) → 품종 → 나이·성별 / 보호소·거리 → 배지(점수, 공고 상태) → 메모(매칭 이유) → 자세히 보기.
+    distance_of(dog)는 보호소까지 거리, badge(dog)는 점수 배지, notes(dog)는 카드에 보여줄 짧은 글 목록,
+    detail_kwargs(dog)는 상세 창에 넘길 값입니다.
     """
-    for start in range(0, len(dogs), columns):
-        cols = st.columns(columns)
-        for col, (i, dog) in zip(cols, enumerate(dogs[start : start + columns], start)):
-            with col, st.container(border=True):
-                render_card(dog, key_prefix=f"{key_prefix}{i}")
-                text = badge(dog) if badge else None
-                if text:
-                    st.markdown(text)
-                extra = detail_kwargs(dog) if detail_kwargs else {}
-                detail_button(dog, locator, key=f"{key_prefix}_detail_{i}_{dog.get('desertionNo')}", **extra)
+    st.html(CARD_CSS)
+    with st.container(key=f"pm_grid_{key_prefix}"):
+        for start in range(0, len(dogs), columns):
+            cols = st.columns(columns)
+            for col, (i, dog) in zip(cols, enumerate(dogs[start : start + columns], start)):
+                key = f"pm_card_{key_prefix}_{i}"
+                with col, st.container(border=True, key=key):
+                    _card_body(
+                        dog, locator, key,
+                        distance_km=distance_of(dog) if distance_of else None,
+                        show_shelter=show_shelter,
+                        badge=badge(dog) if badge else None,
+                        notes=notes(dog) if notes else [],
+                        extra=detail_kwargs(dog) if detail_kwargs else {},
+                    )  # fmt: skip

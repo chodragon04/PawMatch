@@ -32,6 +32,12 @@ def format_breed(dog: dict) -> str:
     return full or (dog.get("kindNm") or "").strip() or "품종 미상"
 
 
+def dog_label(dog: dict) -> str:
+    """화면 낭독기·사진 설명용 한 줄: '믹스견, 2016년생, 암컷, 한국동물구조관리협회'."""
+    parts = [format_breed(dog), format_age(dog.get("age")), format_sex(dog.get("sexCd")), (dog.get("careNm") or "").strip()]
+    return ", ".join(p for p in parts if p)
+
+
 def format_sex(code: str | None) -> str:
     return SEX_LABELS.get((code or "").upper(), "성별 미상")
 

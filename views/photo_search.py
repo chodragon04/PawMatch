@@ -13,7 +13,6 @@ from pawmatch.image_search import ClipEmbedder, PhotoIndex, load_image, read_loc
 from pawmatch.ui import inject_card_css, load_data_or_stop, page_header
 
 TOP_K = 24
-COLUMNS = 4
 WHOLE_COUNTRY = "전국"
 LOW_SIMILARITY = 0.7  # 가장 닮은 아이도 이보다 낮으면 안내 (강아지가 아닌 사진은 실측 0.55~0.60, 다른 강아지끼리 중앙값 0.75)
 UPLOAD_TYPES = ["jpg", "jpeg", "png", "webp"]
@@ -133,6 +132,6 @@ if not results:
 scores = {dog_id: score for dog_id, score, _ in results}
 cards = [{**by_id[dog_id], "popfile0": url} for dog_id, _, url in results]
 render_dog_cards(
-    cards, ShelterLocator(data.shelters), columns=COLUMNS, key_prefix="p",
+    cards, ShelterLocator(data.shelters), key_prefix="p",
     badge=lambda dog: score_badge(f"닮은 정도 {round(scores[str(dog.get('desertionNo'))] * 100)}%"),
 )  # fmt: skip
