@@ -42,6 +42,9 @@ FAVORITE_CSS = """
 .pm-fav.pm-on::before { background: var(--pm-orange-icon);
                         -webkit-mask: __FILLED__ center / contain no-repeat; mask: __FILLED__ center / contain no-repeat; }
 .pm-fav:active { transform: scale(0.88); }
+.pm-fav:focus-visible { outline: 3px solid var(--pm-orange-icon); outline-offset: 2px; }
+/* PC에서 마우스를 올리면 하트를 주황으로 미리 보여줌 (휴대폰은 마우스가 없어 해당 없음) */
+@media (hover: hover) { .pm-fav:hover { background: #FFFFFF; } .pm-fav:hover::before { background: var(--pm-orange-icon); } }
 </style>
 """.replace("__OUTLINE__", _heart_mask(False)).replace("__FILLED__", _heart_mask(True))
 
@@ -64,6 +67,7 @@ FAVORITE_JS = """
       b.setAttribute("aria-pressed", on ? "true" : "false");
       var name = b.dataset.pmName ? ": " + b.dataset.pmName : "";
       b.setAttribute("aria-label", (on ? "찜 취소" : "찜하기") + name);
+      b.title = on ? "찜 취소" : "찜하기";  // PC에서 마우스를 올리면 보이는 설명
     });
   }
   window.__pmFavPaint = paint;
@@ -94,7 +98,7 @@ def heart_button_html(dog_id: str, name: str = "") -> str:
     data_name = f' data-pm-name="{html.escape(name, quote=True)}"' if name else ""
     return (
         f'<button type="button" class="pm-fav" data-pm-fav="{did}"{data_name} aria-label="{label}" '
-        f'aria-pressed="false"></button>'
+        f'title="찜하기" aria-pressed="false"></button>'
     )
 
 

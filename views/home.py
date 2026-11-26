@@ -59,6 +59,9 @@ SHORTCUT_CSS = """
 [class*="st-key-pm_short_"] { position: relative; gap: 0.1rem !important; }
 [class*="st-key-pm_short_"] * { position: static !important; }
 [class*="st-key-pm_short_"]:hover { border-color: var(--pm-orange) !important; background: var(--pm-peach); }
+/* 키보드(Tab)로 왔을 때는 링크 글자 대신 카드 전체에 표시 */
+[class*="st-key-pm_short_"]:has(a:focus-visible) { outline: 3px solid var(--pm-orange-icon); outline-offset: 2px; }
+[class*="st-key-pm_short_"] a[data-testid="stPageLink-NavLink"]:focus-visible { outline: none !important; }
 [class*="st-key-pm_short_"] a[data-testid="stPageLink-NavLink"]::after { content: ""; position: absolute; inset: 0; z-index: 1; }
 [class*="st-key-pm_short_"] a[data-testid="stPageLink-NavLink"] { padding: 0; background: transparent !important; }
 [class*="st-key-pm_short_"] a[data-testid="stPageLink-NavLink"] p { font-size: 1.05rem; font-weight: 700; }

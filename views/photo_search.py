@@ -64,6 +64,8 @@ if index is None or not len(index):
     st.info("보호견 사진을 분석한 데이터를 준비하고 있어요. 잠시 뒤 다시 와 주세요.")
     st.stop()
 
+# PC 웹캠은 화면 폭만큼 커지면(1088x612) 화면을 다 덮어서 640px까지만 (휴대폰은 화면 폭이 더 좁아 그대로)
+st.html("<style>[data-testid='stCameraInput'] { max-width: 640px; }</style>")
 with st.container(border=True):
     upload_tab, camera_tab = st.tabs([":material/image: 사진 올리기", ":material/photo_camera: 카메라로 찍기"])
     uploaded = upload_tab.file_uploader(
