@@ -24,18 +24,27 @@ if raw is None:  # 브라우저에서 아직 값을 못 받음 (곧 다시 그�
     st.caption("찜 목록을 불러오는 중...")
     st.stop()
 
+HEART_HINT = "아이 사진 왼쪽 아래 ♡를 누르면 여기에 모여요."
+
+
+def show_empty(message: str) -> None:
+    """보여줄 아이가 없을 때: 안내와 바로 찾으러 가는 링크. (나란히 두고, 좁은 화면에서는 알아서 줄바꿈)"""
+    st.info(message, icon=":material/favorite:")
+    with st.container(horizontal=True, gap="medium"):
+        st.page_link("views/browse.py", label="보호견 둘러보기", icon=":material/pets:")
+        st.page_link("views/match.py", label="입양 매칭 해 보기", icon=":material/volunteer_activism:")
+    st.stop()
+
+
 ids = F.parse_favorites(raw)
 if not ids:
-    st.info("아직 찜한 아이가 없어요. 아이 사진 왼쪽 아래 ♡를 누르면 여기에 모여요.", icon=":material/favorite:")
-    # 빈 화면에서 바로 찾으러 갈 수 있게
-    left, right = st.columns(2)
-    left.page_link("views/browse.py", label="보호견 둘러보기", icon=":material/pets:")
-    right.page_link("views/match.py", label="입양 매칭 해 보기", icon=":material/volunteer_activism:")
-    st.stop()
+    show_empty(f"아직 찜한 아이가 없어요. {HEART_HINT}")
 
 by_id = {str(dog.get("desertionNo")): dog for dog in data.dogs}
 dogs = [by_id[dog_id] for dog_id in ids if dog_id in by_id]
 gone = len(ids) - len(dogs)
+if not dogs:  # 찜한 아이가 모두 입양됐거나 공고가 끝남
+    show_empty(f"찜했던 아이 {gone}마리는 입양됐거나 공고가 끝나서 더 볼 수 없어요. {HEART_HINT}")
 st.caption(
     f"{len(dogs)}마리 · 이 기기의 브라우저에만 저장돼요"
     + (f" · 입양됐거나 공고가 끝난 {gone}마리는 보이지 않아요" if gone else "")

@@ -132,3 +132,13 @@ def test_favorites_page_when_empty(monkeypatch):
     monkeypatch.setattr(streamlit_js_eval, "streamlit_js_eval", lambda **_: "[]")
     at = open_page("views/favorites.py")
     assert "아직 찜한 아이가 없어요" in texts(at)
+
+
+def test_favorites_page_when_all_saved_dogs_are_gone(monkeypatch):
+    # 찜한 아이가 모두 입양됐거나 공고가 끝나도 빈 화면처럼 안내와 바로가기를 보여줍니다.
+    monkeypatch.setattr(streamlit_js_eval, "streamlit_js_eval", lambda **_: '["9998", "9999"]')
+    at = open_page("views/favorites.py")
+    page = texts(at)
+    assert "찜했던 아이 2마리는 입양됐거나 공고가 끝나서" in page
+    links = [el.proto.label for el in at.get("page_link")]
+    assert links[-2:] == ["보호견 둘러보기", "입양 매칭 해 보기"]  # 앞쪽은 하단 탭
