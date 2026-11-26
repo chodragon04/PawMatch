@@ -234,6 +234,9 @@ __ROOT__
 [data-testid^="stBaseButton-primary"], [data-testid^="stBaseButton-primary"] p { color: var(--pm-text) !important; }
 /* 화면 이름(h1): Streamlit 기본 위 여백이 커서 예전(h2) 위치에 맞춤 */
 [data-testid="stHeading"] h1 { padding-top: 0.25rem !important; }
+/* 브라우저 값을 읽는 보이지 않는 칸(내 위치, 찜 목록: streamlit_js_eval)이 빈 자리를 만들지 않게 높이 0 (동작은 그대로) */
+[data-testid="stElementContainer"]:has(iframe[title="streamlit_js_eval.streamlit_js_eval"]) {
+  height: 0 !important; min-height: 0 !important; overflow: hidden; margin: 0 !important; }
 /* 알약 버튼: 손가락으로 누르기 쉽게 높이 44px (기본 32px) */
 button[data-variant="pills"] { min-height: 2.75rem; }
 /* 고른 알약 버튼 글자 */

@@ -28,8 +28,11 @@ SIZE_FILTER_LABELS = {
     UNKNOWN_SIZE: "크기 예측 어려움",
 }
 
-RECENT, DEADLINE, LONGEST, FIT = "recent", "deadline", "longest", "fit"
-SORT_LABELS = {RECENT: "최근 등록순", DEADLINE: "공고 마감 임박순", LONGEST: "오래 기다린 순", FIT: "나와 잘 맞는 순"}
+RECENT, DEADLINE, LONGEST, NEAREST, FIT = "recent", "deadline", "longest", "nearest", "fit"
+SORT_LABELS = {
+    RECENT: "최근 등록순", DEADLINE: "공고 마감 임박순", LONGEST: "오래 기다린 순", NEAREST: "가까운 순",
+    FIT: "나와 잘 맞는 순",
+}  # fmt: skip
 
 KEYWORD_FIELDS = ("kindNm", "kindFullNm", "colorCd", "specialMark", "careNm", "careAddr", "happenPlace", "noticeNo")
 
@@ -101,16 +104,23 @@ def fit_results(dogs: list[dict], survey: Survey, today: date | None = None) -> 
 
 
 def sort_dogs(
-    dogs: list[dict], order: str = RECENT, today: date | None = None, fits: dict[str, MatchResult] | None = None
+    dogs: list[dict], order: str = RECENT, today: date | None = None, fits: dict[str, MatchResult] | None = None,
+    distances: dict[str, float | None] | None = None,
 ) -> list[dict]:
     """정렬 순서.
 
     - 최근 등록순: 공고 시작일이 최근인 아이부터
     - 공고 마감 임박순: 공고 중인 아이를 종료일이 가까운 순서로, 그다음 공고가 끝난 아이
     - 오래 기다린 순: 구조된 날이 오래된 아이부터
+    - 가까운 순: 기준 위치에서 보호소까지 가까운 아이부터 (distances 필요, 거리를 모르는 아이는 맨 뒤, 같으면 최근 등록순)
     - 나와 잘 맞는 순: 입양 매칭 설문 적합도가 높은 아이부터 (fits 필요, 같으면 최근 등록순)
     """
     today = today or today_kst()
+    if order == NEAREST and distances:
+        recent = sort_dogs(dogs, RECENT, today)
+        far = float("inf")
+        return sorted(recent, key=lambda d: (distances.get(str(d.get("desertionNo"))) is None,
+                                             distances.get(str(d.get("desertionNo"))) or far))  # fmt: skip
     if order == FIT and fits:
         recent = sort_dogs(dogs, RECENT, today)
         return sorted(recent, key=lambda d: -fits[str(d.get("desertionNo"))].score)

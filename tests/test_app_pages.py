@@ -158,3 +158,16 @@ def test_favorites_page_when_all_saved_dogs_are_gone(monkeypatch):
     assert "찜했던 아이 2마리는 입양됐거나 공고가 끝나서" in page
     links = [el.proto.label for el in at.get("page_link")]
     assert links[-2:] == ["보호견 둘러보기", "입양 매칭 해 보기"]  # 앞쪽은 하단 탭
+
+
+def test_browse_nearest_uses_chosen_region_or_asks_for_location():
+    at = open_page("views/browse.py")
+    at.selectbox(key="browse_order").set_value("nearest").run()
+    assert not at.exception
+    # 위치도 지역도 없으면 위치 권한을 부탁하고 최근 등록순으로 보여줌
+    assert "위치 권한을 허용해 주세요" in texts(at)
+
+    at.selectbox(key="browse_sido").set_value("부산광역시").run()
+    page = texts(at)
+    assert "부산광역시 시청·도청 기준으로 가까운 보호소의 아이부터" in page
+    assert "km" in page  # 카드에 보호소까지 거리

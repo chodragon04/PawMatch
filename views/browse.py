@@ -9,8 +9,8 @@ from pawmatch import state as S
 from pawmatch import traits as T
 from pawmatch.detail import render_dog_cards
 from pawmatch.display import chips_markdown, format_updated, score_badge
-from pawmatch.geo import REGION_CENTERS, ShelterLocator
-from pawmatch.location import PICK_REGION
+from pawmatch.geo import REGION_CENTERS, ShelterLocator, haversine_km
+from pawmatch.location import PICK_REGION, locate_sigungu, remembered_location, request_my_location
 from pawmatch.matching import ANY, breed_options
 from pawmatch.regions import load_regions
 from pawmatch.ui import inject_card_css, is_phone, load_data_or_stop, page_header
@@ -86,6 +86,28 @@ def chosen_labels(c: B.BrowseFilter) -> list[str]:
     breeds = sorted(c.breeds)
     labels += breeds if len(breeds) <= 2 else [*breeds[:2], f"품종 {len(breeds) - 2}개 더"]
     return labels
+
+
+def nearest_origin(c: B.BrowseFilter) -> tuple[tuple[float, float] | None, str]:
+    """'가까운 순'의 기준 위치와 설명.
+
+    1) 홈·매칭에서 30분 안에 받은 내 위치 → 2) 검색 조건에서 고른 시/군/구(또는 시/도) 중심
+    → 3) 둘 다 없으면 지금 브라우저에 내 위치를 물어봅니다. (사용자가 '가까운 순'을 골랐을 때만)
+    """
+    remembered = remembered_location()
+    if remembered is not None:
+        return (remembered[0], remembered[1]), "내 위치"
+    if c.sido:
+        pos = locate_sigungu(c.sido, c.sigungu) if c.sigungu else None
+        if pos is not None:
+            return pos, f"{c.sido} {c.sigungu}"
+        return REGION_CENTERS[c.sido], f"{c.sido} 시청·도청"
+    got = request_my_location()
+    if isinstance(got, tuple):
+        return got, "내 위치"
+    if isinstance(got, str):  # 브라우저 오류 문구는 영어라 보여주지 않음
+        return None, "내 위치를 가져오지 못했어요. 검색 조건에서 시/도를 고르면 그 지역 기준으로 보여드려요."
+    return None, "가까운 순으로 보려면 위치 권한을 허용해 주세요. 검색 조건에서 시/도를 골라도 돼요."
 
 
 def filter_controls(dogs: list[dict], survey) -> B.BrowseFilter:
@@ -193,6 +215,19 @@ order = sort_col.selectbox(
 if survey is not None and order != B.FIT:
     st.caption("입양 매칭 답변으로 적합도를 계산했어요. 정렬을 '나와 잘 맞는 순'으로 바꿔 보세요.")
 
+# 가까운 순: 기준 위치에서 각 아이의 보호소까지 거리 (카드에도 거리를 보여줌)
+locator = ShelterLocator(data.shelters)
+distances: dict[str, float | None] = {}
+if order == B.NEAREST:
+    origin, basis = nearest_origin(conditions)
+    if origin is None:
+        st.info(basis + " 지금은 최근 등록순이에요.", icon=":material/my_location:")
+    else:
+        st.caption(f":material/near_me: {basis} 기준으로 가까운 보호소의 아이부터 보여드려요.")
+        for dog in found:
+            pos = locator.locate(dog)
+            distances[str(dog.get("desertionNo"))] = haversine_km(origin, pos) if pos else None
+
 if not found:
     st.info("조건에 맞는 아이가 없어요. 조건을 줄이거나 초기화해 보세요.")
     st.stop()
@@ -214,8 +249,9 @@ def fit_detail(dog: dict) -> dict:
 
 limit = min(st.session_state.get(f"{KEY}limit", PAGE_SIZE), len(found))
 render_dog_cards(
-    B.sort_dogs(found, order, fits=fits)[:limit], ShelterLocator(data.shelters), key_prefix="b",
+    B.sort_dogs(found, order, fits=fits, distances=distances)[:limit], locator, key_prefix="b",
     badge=fit_badge, detail_kwargs=fit_detail,
+    distance_of=(lambda dog: distances.get(str(dog.get("desertionNo")))) if distances else None,
 )  # fmt: skip
 
 if limit < len(found):
