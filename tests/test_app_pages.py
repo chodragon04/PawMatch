@@ -171,3 +171,11 @@ def test_browse_nearest_uses_chosen_region_or_asks_for_location():
     page = texts(at)
     assert "부산광역시 시청·도청 기준으로 가까운 보호소의 아이부터" in page
     assert "km" in page  # 카드에 보호소까지 거리
+
+
+def test_photo_search_region_has_sigungu_like_other_pages():
+    at = open_page("views/photo_search.py")
+    at.selectbox(key="photo_sido").set_value("경기도").run()
+    assert not at.exception
+    sigungu = at.selectbox(key="photo_sigungu_경기도")  # 다른 화면과 같은 시/도 + 시/군/구
+    assert sigungu.value == "전체" and "수원시" in sigungu.options

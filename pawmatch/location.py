@@ -16,7 +16,38 @@ from pawmatch.regions import load_regions
 from pawmatch.state import PERSIST
 
 MY_LOCATION, PICK_REGION = ":material/my_location: 내 위치로 찾기", ":material/map: 지역 선택"
-WHOLE_SIDO = "전체"
+WHOLE_COUNTRY, WHOLE_SIDO = "전국", "전체"
+
+# 지역 고르기(시/도 + 시/군/구)는 모든 화면이 같은 모양: 휴대폰에서도 한 줄에 나란히, PC에서는 두 칸 합쳐 최대 560px.
+REGION_CSS = """
+<style>
+[class*="st-key-pm_region_"] { max-width: 35rem; }
+[class*="st-key-pm_region_"] [data-testid="stHorizontalBlock"] { flex-wrap: nowrap !important; gap: 0.75rem !important; }
+[class*="st-key-pm_region_"] [data-testid="stColumn"] { flex: 1 1 0 !important; width: auto !important; min-width: 0 !important; }
+</style>
+"""
+
+
+def region_select(
+    sido_key: str, sigungu_key: str, *, whole_country: bool = False, on_change=None
+) -> tuple[str | None, str | None]:
+    """시/도와 시/군/구 고르기 (홈·입양 매칭·둘러보기·사진 찾기가 같이 씀).
+
+    whole_country=True면 시/도에 '전국'을 넣습니다(조건으로 거를 때). 시/군/구 key에는 시/도를 붙여서
+    시/도가 바뀌면 시/군/구가 처음(전체)으로 돌아갑니다. 돌려주는 값: (시/도, 시/군/구), 전국·전체는 None.
+    """
+    regions = load_regions()
+    st.html(REGION_CSS)
+    with st.container(key=f"pm_region_{sido_key}"):
+        col_sido, col_sigungu = st.columns(2)
+        sido_options = [WHOLE_COUNTRY, *REGION_CENTERS] if whole_country else list(REGION_CENTERS)
+        sido = col_sido.selectbox("시/도", sido_options, key=sido_key, on_change=on_change, persist_state=PERSIST)
+        options = [WHOLE_SIDO, *regions.get(sido, ())]
+        sigungu = col_sigungu.selectbox(
+            "시/군/구", options, key=f"{sigungu_key}_{sido}", disabled=len(options) == 1, on_change=on_change,
+            persist_state=PERSIST,
+        )  # fmt: skip
+    return (None if sido == WHOLE_COUNTRY else sido), (None if sigungu == WHOLE_SIDO else sigungu)
 
 # 브라우저에서 받은 내 위치를 이 시간 동안 기억해, 화면을 옮기거나 다시 그릴 때마다 위치 권한을 다시 묻지 않습니다.
 # (홈·입양 매칭이 같이 씀. 서버에 저장하지 않고 이 브라우저 탭의 세션에만 둡니다)
@@ -72,17 +103,10 @@ def selected_area(key: str) -> tuple[str, str | None] | None:
 
 def pick_region(key: str) -> tuple[float, float]:
     """시/도와 시/군/구를 고르게 하고 기준 위치를 돌려줍니다."""
-    regions = load_regions()
-    col_sido, col_sigungu = st.columns(2)
-    sido = col_sido.selectbox("시/도", list(REGION_CENTERS), index=0, key=f"{key}_region", persist_state=PERSIST)
-    options = [WHOLE_SIDO, *regions.get(sido, ())]
-    # 시/도가 바뀌면 시/군/구 선택을 처음(전체)으로 되돌리도록 key에 시/도를 넣습니다.
-    sigungu = col_sigungu.selectbox(
-        "시/군/구", options, index=0, key=f"{key}_sigungu_{sido}", disabled=len(options) == 1, persist_state=PERSIST
-    )
-    st.session_state[f"{key}_area"] = (sido, sigungu if sigungu != WHOLE_SIDO else None)
+    sido, sigungu = region_select(f"{key}_region", f"{key}_sigungu")
+    st.session_state[f"{key}_area"] = (sido, sigungu)
 
-    if sigungu != WHOLE_SIDO:
+    if sigungu:
         pos = locate_sigungu(sido, sigungu)
         if pos is not None:
             st.caption(f"{sido} {sigungu} 기준으로 거리를 재요.")
