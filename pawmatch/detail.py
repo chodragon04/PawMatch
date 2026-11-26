@@ -21,7 +21,7 @@ MASKED_TEL_RE = re.compile(r"^\*+$")
 FACTS_CSS = """
 <style>
 .pm-facts { display: grid; grid-template-columns: max-content 1fr; gap: 0.35rem 1rem; margin: 0.25rem 0 0.5rem; }
-.pm-facts dt { color: #9C8B82; }
+.pm-facts dt { color: var(--pm-muted); }
 .pm-facts dd { margin: 0; word-break: keep-all; }
 </style>
 """

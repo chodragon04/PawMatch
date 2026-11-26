@@ -73,7 +73,7 @@ def test_badges():
 
     assert status_badge("입양 가능") == ":green-badge[입양 가능]"
     assert status_badge("공고 중 · 11/12까지") == ":gray-badge[공고 중 · 11/12까지]"
-    assert score_badge("적합도 90점") == ":primary-badge[적합도 90점]"
+    assert score_badge("적합도 90점") == ":orange-badge[적합도 90점]"
 
 
 def test_today_is_korean_date_even_on_utc_server(monkeypatch):

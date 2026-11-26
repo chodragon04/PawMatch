@@ -37,9 +37,9 @@ FAVORITE_CSS = """
           padding: 0; border: none; border-radius: 50%; background: rgba(255, 255, 255, 0.92);
           box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18); display: flex; align-items: center; justify-content: center;
           cursor: pointer; -webkit-tap-highlight-color: transparent; }
-.pm-fav::before { content: ""; width: 1.35rem; height: 1.35rem; background: #9C8B82;
+.pm-fav::before { content: ""; width: 1.35rem; height: 1.35rem; background: var(--pm-muted);
                   -webkit-mask: __OUTLINE__ center / contain no-repeat; mask: __OUTLINE__ center / contain no-repeat; }
-.pm-fav.pm-on::before { background: #FF8A3D;
+.pm-fav.pm-on::before { background: var(--pm-orange-icon);
                         -webkit-mask: __FILLED__ center / contain no-repeat; mask: __FILLED__ center / contain no-repeat; }
 .pm-fav:active { transform: scale(0.88); }
 </style>

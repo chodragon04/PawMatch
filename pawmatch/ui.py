@@ -11,6 +11,7 @@ from urllib.parse import urlparse
 import streamlit as st
 
 from pawmatch.api import ApiError
+from pawmatch.colors import ROOT_CSS
 from pawmatch.config import get_api_key
 from pawmatch.data import STORE, WARN_AFTER, Dataset
 from pawmatch.display import adoption_status, format_age, format_breed, format_sex, format_updated, photo_urls, status_badge
@@ -23,11 +24,11 @@ PHOTO_FAIL_DETAIL = "보호소에 문의하면 아이의 모습을 확인할 수
 CARD_CSS = """
 <style>
 .pm-photo { position: relative; width: 100%; aspect-ratio: 4 / 3; border-radius: 0.5rem;
-            overflow: hidden; background: #FFF4EC; }
+            overflow: hidden; background: var(--pm-peach); }
 .pm-photo img { width: 100%; height: 100%; object-fit: contain; display: block; }
 .pm-photo .pm-fail { display: none; position: absolute; inset: 0; flex-direction: column;
                      align-items: center; justify-content: center; text-align: center;
-                     padding: 0.75rem; gap: 0.25rem; color: rgba(128, 128, 128, 0.95);
+                     padding: 0.75rem; gap: 0.25rem; color: var(--pm-muted);
                      word-break: keep-all; }
 .pm-photo .pm-fail b { font-size: 0.9rem; }
 .pm-photo .pm-fail small { font-size: 0.75rem; line-height: 1.3; }
@@ -99,7 +100,7 @@ CAROUSEL_CSS = """
 <style>
 .pm-carousel { position: relative; width: 100%; }
 .pm-carousel .pm-stage { position: relative; width: 100%; height: min(62vh, 520px); border-radius: 0.5rem;
-                         overflow: hidden; background: #FFF4EC; touch-action: pan-y; }
+                         overflow: hidden; background: var(--pm-peach); touch-action: pan-y; }
 .pm-carousel .pm-slide { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain;
                          display: none; }
 .pm-carousel .pm-slide.pm-on { display: block; }
@@ -114,11 +115,11 @@ CAROUSEL_CSS = """
 .pm-carousel .pm-thumbs { display: flex; gap: 0.4rem; margin-top: 0.5rem; overflow-x: auto; }
 .pm-carousel .pm-thumb { flex: 0 0 auto; width: 4rem; height: 3rem; object-fit: cover; border-radius: 0.3rem;
                          cursor: pointer; opacity: 0.55; border: 2px solid transparent; }
-.pm-carousel .pm-thumb.pm-on { opacity: 1; border-color: #FF8A3D; }
+.pm-carousel .pm-thumb.pm-on { opacity: 1; border-color: var(--pm-orange-icon); }
 .pm-carousel.pm-single .pm-nav, .pm-carousel.pm-single .pm-count,
 .pm-carousel.pm-single .pm-thumbs { display: none; }
 .pm-carousel .pm-fail { display: none; position: absolute; inset: 0; flex-direction: column; align-items: center;
-                        justify-content: center; gap: 0.25rem; color: rgba(128, 128, 128, 0.95); }
+                        justify-content: center; gap: 0.25rem; color: var(--pm-muted); }
 .pm-carousel.pm-failed .pm-fail { display: flex; }
 .pm-carousel.pm-failed .pm-nav, .pm-carousel.pm-failed .pm-count, .pm-carousel.pm-failed .pm-thumbs { display: none; }
 </style>
@@ -209,9 +210,18 @@ def carousel_html(dog: dict, element_id: str) -> str:
 
 NAV_CSS = """
 <style>
+__ROOT__
+/* 캡션(카드의 나이·보호소, 안내 문구): Streamlit은 글자를 60%로 흐리게 해서 대비가 3.79 → 진한 회색, 흐림 없음 */
+[data-testid="stCaptionContainer"] { color: var(--pm-muted) !important; opacity: 1 !important; }
+[data-testid="stCaptionContainer"] p { color: var(--pm-muted) !important; }
+/* 주황 버튼의 흰 글자는 대비가 낮아(2.35) 진한 갈색 글자로 */
+[data-testid^="stBaseButton-primary"], [data-testid^="stBaseButton-primary"] p { color: var(--pm-text) !important; }
+/* 고른 알약 버튼 글자 */
+[data-testid="stButtonGroup"] button[aria-pressed="true"],
+[data-testid="stButtonGroup"] button[aria-pressed="true"] p { color: var(--pm-orange-text) !important; }
 /* 화면 맨 아래에 고정된 아이콘 탭. 지금 화면은 주황색으로 표시합니다. */
 .st-key-pm_nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 999990; background: #FFFFFF;
-                 border-top: 1px solid #F3DCCB; box-shadow: 0 -2px 12px rgba(255, 138, 61, 0.10);
+                 border-top: 1px solid var(--pm-line); box-shadow: 0 -2px 12px rgba(255, 138, 61, 0.10);
                  padding: 0.25rem 0.5rem calc(0.25rem + env(safe-area-inset-bottom)); }
 .st-key-pm_nav [data-testid="stHorizontalBlock"] { flex-wrap: nowrap !important; gap: 0 !important;
                                                    max-width: 560px; margin: 0 auto; }
@@ -219,21 +229,21 @@ NAV_CSS = """
 .st-key-pm_nav [data-testid="stPageLink"], .st-key-pm_nav [data-testid="stElementContainer"] { width: 100% !important; }
 .st-key-pm_nav a[data-testid="stPageLink-NavLink"] { flex-direction: column; justify-content: center; align-items: center;
                                                     gap: 0.1rem; padding: 0.35rem 0; border-radius: 0.8rem;
-                                                    background: transparent !important; color: #9C8B82; height: auto !important; }
+                                                    background: transparent !important; color: var(--pm-muted); height: auto !important; }
 .st-key-pm_nav a[data-testid="stPageLink-NavLink"] > span:first-child { height: auto !important; width: auto !important; margin: 0 !important; }
 .st-key-pm_nav [data-testid="stVerticalBlock"], .st-key-pm_nav [data-testid="stHorizontalBlock"] { flex: 0 0 auto !important; }
-.st-key-pm_nav a[data-testid="stPageLink-NavLink"] span[data-testid="stIconMaterial"] { font-size: 1.6rem; width: 1.6rem !important; height: 1.6rem !important; line-height: 1; color: #B9A79D; }
-.st-key-pm_nav a[data-testid="stPageLink-NavLink"] p { font-size: 0.7rem; line-height: 1; color: #9C8B82; margin: 0; }
+.st-key-pm_nav a[data-testid="stPageLink-NavLink"] span[data-testid="stIconMaterial"] { font-size: 1.6rem; width: 1.6rem !important; height: 1.6rem !important; line-height: 1; color: var(--pm-muted); }
+.st-key-pm_nav a[data-testid="stPageLink-NavLink"] p { font-size: 0.75rem; line-height: 1.1; color: var(--pm-muted); margin: 0; }
 /* 위쪽 메뉴 줄이 없어졌으니 위 여백을 줄이고, 내용이 하단 탭에 가려지지 않게 아래 여백을 둡니다. */
 [data-testid="stMainBlockContainer"] { padding-top: 3.5rem !important; padding-bottom: 6rem !important; }
 </style>
-"""
+""".replace("__ROOT__", ROOT_CSS)
 
-# 지금 화면의 탭 (key가 pm_nav_<번호>인 칸)
+# 지금 화면의 탭 (key가 pm_nav_<번호>인 칸): 아이콘은 아이콘용 주황, 글자는 글자용 진한 주황
 NAV_ACTIVE_CSS = """
 <style>
-.st-key-pm_nav_%(i)d a[data-testid="stPageLink-NavLink"] span[data-testid="stIconMaterial"],
-.st-key-pm_nav_%(i)d a[data-testid="stPageLink-NavLink"] p { color: #FF8A3D !important; font-weight: 700; }
+.st-key-pm_nav_%(i)d a[data-testid="stPageLink-NavLink"] span[data-testid="stIconMaterial"] { color: var(--pm-orange-icon) !important; }
+.st-key-pm_nav_%(i)d a[data-testid="stPageLink-NavLink"] p { color: var(--pm-orange-text) !important; font-weight: 700; }
 </style>
 """
 

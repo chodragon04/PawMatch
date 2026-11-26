@@ -72,8 +72,8 @@ def status_badge(status: str) -> str:
 
 
 def score_badge(text: str) -> str:
-    """적합도·닮은 정도 같은 PawMatch 점수 배지(마크다운). 테마 포인트 색(주황)을 씁니다."""
-    return f":primary-badge[{text}]"
+    """적합도·닮은 정도 같은 PawMatch 점수 배지(마크다운). 주황 배지(진한 주황 글자, config.toml의 orange 색)."""
+    return f":orange-badge[{text}]"
 
 
 def format_updated(fetched_at: datetime) -> str:
